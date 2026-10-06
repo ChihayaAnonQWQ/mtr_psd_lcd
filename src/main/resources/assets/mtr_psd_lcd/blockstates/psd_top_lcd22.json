@@ -195,7 +195,7 @@
         "persistent": "none"
       },
       "apply": {
-        "model": "mtr:block/psd_top_left_end"
+        "model": "mtr_psd_lcd:block/psd_top_left_end"
       }
     },
     {
@@ -205,7 +205,7 @@
         "persistent": "none"
       },
       "apply": {
-        "model": "mtr:block/psd_top_left_end",
+        "model": "mtr_psd_lcd:block/psd_top_left_end",
         "y": 90
       }
     },
@@ -216,7 +216,7 @@
         "persistent": "none"
       },
       "apply": {
-        "model": "mtr:block/psd_top_left_end",
+        "model": "mtr_psd_lcd:block/psd_top_left_end",
         "y": 180
       }
     },
@@ -227,7 +227,7 @@
         "persistent": "none"
       },
       "apply": {
-        "model": "mtr:block/psd_top_left_end",
+        "model": "mtr_psd_lcd:block/psd_top_left_end",
         "y": 270
       }
     },
@@ -238,7 +238,7 @@
         "persistent": "none"
       },
       "apply": {
-        "model": "mtr:block/psd_top_right_end"
+        "model": "mtr_psd_lcd:block/psd_top_right_end"
       }
     },
     {
@@ -248,7 +248,7 @@
         "persistent": "none"
       },
       "apply": {
-        "model": "mtr:block/psd_top_right_end",
+        "model": "mtr_psd_lcd:block/psd_top_right_end",
         "y": 90
       }
     },
@@ -259,7 +259,7 @@
         "persistent": "none"
       },
       "apply": {
-        "model": "mtr:block/psd_top_right_end",
+        "model": "mtr_psd_lcd:block/psd_top_right_end",
         "y": 180
       }
     },
@@ -270,7 +270,7 @@
         "persistent": "none"
       },
       "apply": {
-        "model": "mtr:block/psd_top_right_end",
+        "model": "mtr_psd_lcd:block/psd_top_right_end",
         "y": 270
       }
     },

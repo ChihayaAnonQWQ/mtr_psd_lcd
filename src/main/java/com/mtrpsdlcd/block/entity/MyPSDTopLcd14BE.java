@@ -1,43 +1,40 @@
 package com.mtrpsdlcd.block.entity;
 
 import com.mtrpsdlcd.registry.BlockEntities;
-import org.mtr.mapping.holder.BlockEntityType;
-import org.mtr.mapping.holder.BlockPos;
-import org.mtr.mapping.holder.BlockState;
-import org.mtr.mapping.holder.CompoundTag;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class MyPSDTopLcd14BE extends MyPSDTopBE {
+   private static final String TAG_ROUTE_INDEX = "routeIndex";
+   private int routeIndex = 0;
 
-	private static final String TAG_ROUTE_INDEX = "routeIndex";
+   public MyPSDTopLcd14BE(BlockPos pos, BlockState state) {
+      this((BlockEntityType)BlockEntities.PSD_TOP_LCD14.get(), pos, state);
+   }
 
-	private int routeIndex = 0;
+   public MyPSDTopLcd14BE(net.minecraft.world.level.block.entity.BlockEntityType<?> type, net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
+      super(type, pos, state);
+   }
 
-	public MyPSDTopLcd14BE(BlockPos pos, BlockState state) {
-		this(BlockEntities.PSD_TOP_LCD14.get(), pos, state);
-	}
+   public int getRouteIndex() {
+      return this.routeIndex;
+   }
 
-	public MyPSDTopLcd14BE(BlockEntityType<?> type, BlockPos pos, BlockState state) {
-		super(type, pos, state);
-	}
+   public void setRouteIndex(int index) {
+      this.routeIndex = index;
+      this.setChanged();
+      this.syncToClient();
+   }
 
-	public int getRouteIndex() {
-		return routeIndex;
-	}
+   public void writeCompoundTag(CompoundTag compoundTag) {
+      super.writeCompoundTag(compoundTag);
+      compoundTag.putInt("routeIndex", this.routeIndex);
+   }
 
-	public void setRouteIndex(int index) {
-		this.routeIndex = index;
-		markDirty2();
-	}
-
-	@Override
-	public void writeCompoundTag(CompoundTag compoundTag) {
-		super.writeCompoundTag(compoundTag);
-		compoundTag.putInt(TAG_ROUTE_INDEX, routeIndex);
-	}
-
-	@Override
-	public void readCompoundTag(CompoundTag compoundTag) {
-		super.readCompoundTag(compoundTag);
-		routeIndex = compoundTag.contains(TAG_ROUTE_INDEX) ? compoundTag.getInt(TAG_ROUTE_INDEX) : 0;
-	}
+   public void readCompoundTag(CompoundTag compoundTag) {
+      super.readCompoundTag(compoundTag);
+      this.routeIndex = compoundTag.contains("routeIndex") ? compoundTag.getInt("routeIndex") : 0;
+   }
 }

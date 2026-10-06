@@ -1,274 +1,344 @@
 package com.mtrpsdlcd.block;
 
 import com.mtrpsdlcd.block.entity.MyPSDTopBE;
-import org.mtr.mapping.holder.BlockEntity;
-import org.mtr.mapping.holder.BlockPos;
-import org.mtr.mapping.holder.BlockState;
-import org.mtr.mapping.holder.Direction;
-import org.mtr.mapping.holder.World;
-import org.mtr.mod.block.BlockPSDGlass;
-import org.mtr.mod.block.BlockPSDTop;
-import org.mtr.mod.block.IBlock;
+import com.mtrpsdlcd.server.PSDCustomTextStore;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import mtr.block.BlockPSDGlass;
+import mtr.block.BlockPSDTop;
+import mtr.block.IBlock;
+import net.minecraftforge.fml.loading.FMLPaths;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 
 public final class PSDCustomText {
-	public static final String DEFAULT_TEXT = "地铁轨交";
+   public static final String DEFAULT_TEXT = "\u5730\u94c1\u8f68\u4ea4";
+   public static final String LIBRARY_SUB_DIR = "1";
+   public static final String SELECTED_NONE = "@none";
+   private static long libraryScanTime = 0L;
+   private static String selectedImage = "";
+   private static String libraryNewestImage = "";
+   private static long libraryNewestTime = 0L;
+   private static boolean selectedCleared = false;
+   private static final Map<String, String> IMAGE_VERSION = new HashMap();
+   private static final Map<String, Long> IMAGE_VERSION_TIME = new HashMap();
+   private static volatile boolean serverStoreValid = false;
+   private static volatile String serverStoreText = "";
+   private static volatile String serverStoreImageName = "";
+   private static volatile String serverStoreImagePath = "";
 
-	public static final String LIBRARY_SUB_DIR = "1";
+   public static File getLibraryGroupDir() {
+      File dir = new File(new File(FMLPaths.GAMEDIR.get().toFile(), "psd_lcd_images"), "1");
+      if (!dir.isDirectory()) {
+         dir.mkdirs();
+      }
 
-	public static final String SELECTED_NONE = "@none";
+      return dir;
+   }
 
-	private static long libraryScanTime = 0L;
-	private static String selectedImage = "";
-	private static String libraryNewestImage = "";
-	private static long libraryNewestTime = 0L;
-	private static boolean selectedCleared = false;
+   private static synchronized void scanLibrary() {
+      long now = System.currentTimeMillis();
+      if (now - libraryScanTime >= 3000L) {
+         libraryScanTime = now;
+         selectedImage = "";
+         libraryNewestImage = "";
+         libraryNewestTime = 0L;
+         selectedCleared = false;
+         long markerTime = 0L;
+         boolean markerIsNone = false;
 
-	public static java.io.File getLibraryGroupDir() {
-		final java.io.File dir = new java.io.File(new java.io.File(net.fabricmc.loader.api.FabricLoader.getInstance().getGameDir().toFile(), "psd_lcd_images"), LIBRARY_SUB_DIR);
-		if (!dir.isDirectory()) {
-			dir.mkdirs();
-		}
-		return dir;
-	}
+         try {
+            File marker = new File(getLibraryGroupDir(), "selected.txt");
+            if (marker.isFile()) {
+               markerTime = marker.lastModified();
+               String name = (new String(Files.readAllBytes(marker.toPath()), StandardCharsets.UTF_8)).trim();
+               if (!"@none".equalsIgnoreCase(name) && !name.isEmpty()) {
+                  File image = new File(name);
+                  File resolved = image.isAbsolute() ? image : new File(getLibraryGroupDir(), name);
+                  if (resolved.isFile()) {
+                     selectedImage = resolved.getAbsolutePath();
+                  }
+               } else {
+                  markerIsNone = true;
+               }
+            }
 
-	private static synchronized void scanLibrary() {
-		final long now = System.currentTimeMillis();
-		if (now - libraryScanTime < 3000L) {
-			return;
-		}
-		libraryScanTime = now;
-		selectedImage = "";
-		libraryNewestImage = "";
-		libraryNewestTime = 0L;
-		selectedCleared = false;
-		long markerTime = 0L;
-		boolean markerIsNone = false;
-		try {
-			final java.io.File marker = new java.io.File(getLibraryGroupDir(), "selected.txt");
-			if (marker.isFile()) {
-				markerTime = marker.lastModified();
-				final String name = new String(java.nio.file.Files.readAllBytes(marker.toPath()), java.nio.charset.StandardCharsets.UTF_8).trim();
+            File[] files = getLibraryGroupDir().listFiles();
+            if (files != null) {
+               for(File file : files) {
+                  String name = file.getName().toLowerCase(Locale.ROOT);
+                  if (file.isFile() && (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".bmp") || name.endsWith(".gif")) && file.lastModified() >= libraryNewestTime) {
+                     libraryNewestTime = file.lastModified();
+                     libraryNewestImage = file.getAbsolutePath();
+                  }
+               }
+            }
+         } catch (Throwable var12) {
+         }
 
-				if (SELECTED_NONE.equalsIgnoreCase(name) || name.isEmpty()) {
-					markerIsNone = true;
-				} else {
-					final java.io.File image = new java.io.File(name);
-					final java.io.File resolved = image.isAbsolute() ? image : new java.io.File(getLibraryGroupDir(), name);
-					if (resolved.isFile()) {
-						selectedImage = resolved.getAbsolutePath();
-					}
-				}
-			}
-			final java.io.File[] files = getLibraryGroupDir().listFiles();
-			if (files != null) {
-				for (final java.io.File file : files) {
-					final String name = file.getName().toLowerCase(java.util.Locale.ROOT);
-					if (file.isFile() && (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".bmp") || name.endsWith(".gif"))) {
-						if (file.lastModified() >= libraryNewestTime) {
-							libraryNewestTime = file.lastModified();
-							libraryNewestImage = file.getAbsolutePath();
-						}
-					}
-				}
-			}
-		} catch (Throwable ignored) {
-		}
+         selectedCleared = markerIsNone && (libraryNewestImage.isEmpty() || libraryNewestTime <= markerTime);
+         if (markerIsNone && !selectedCleared) {
+            selectedImage = libraryNewestImage;
+         }
 
-		selectedCleared = markerIsNone && (libraryNewestImage.isEmpty() || libraryNewestTime <= markerTime);
-		if (markerIsNone && !selectedCleared) {
-			selectedImage = libraryNewestImage;
-		}
-	}
+      }
+   }
 
-	public static String getSelectedLibraryImage() {
-		scanLibrary();
-		return selectedImage;
-	}
+   public static String getSelectedLibraryImage() {
+      scanLibrary();
+      return selectedImage;
+   }
 
-	public static boolean isLibrarySelectionCleared() {
-		scanLibrary();
-		return selectedCleared;
-	}
+   public static boolean isLibrarySelectionCleared() {
+      scanLibrary();
+      return selectedCleared;
+   }
 
-	public static void setSelectedLibraryImage(String path) {
-		try {
-			final String name = (path == null || path.isEmpty()) ? "" : new java.io.File(path).getName();
-			java.nio.file.Files.write(new java.io.File(getLibraryGroupDir(), "selected.txt").toPath(), name.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-			libraryScanTime = 0L;
-		} catch (Throwable ignored) {
-		}
-	}
+   public static void setSelectedLibraryImage(String path) {
+      try {
+         String name = path != null && !path.isEmpty() ? (new File(path)).getName() : "";
+         Files.write((new File(getLibraryGroupDir(), "selected.txt")).toPath(), name.getBytes(StandardCharsets.UTF_8), new OpenOption[0]);
+         libraryScanTime = 0L;
+      } catch (Throwable var2) {
+      }
 
-	public static void clearSelectedLibraryImage() {
-		try {
-			java.nio.file.Files.write(new java.io.File(getLibraryGroupDir(), "selected.txt").toPath(), SELECTED_NONE.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-			libraryScanTime = 0L;
-		} catch (Throwable ignored) {
-		}
-	}
+   }
 
-	public static String findFirstLibraryImage() {
-		scanLibrary();
-		return libraryNewestImage;
-	}
+   public static void clearSelectedLibraryImage() {
+      try {
+         Files.write((new File(getLibraryGroupDir(), "selected.txt")).toPath(), "@none".getBytes(StandardCharsets.UTF_8), new OpenOption[0]);
+         libraryScanTime = 0L;
+      } catch (Throwable var1) {
+      }
 
-	// ==========================================================================================
+   }
 
-	// ==========================================================================================
-	private static final java.util.Map<String, String> IMAGE_VERSION = new java.util.HashMap<>();
-	private static final java.util.Map<String, Long> IMAGE_VERSION_TIME = new java.util.HashMap<>();
+   public static String findFirstLibraryImage() {
+      scanLibrary();
+      return libraryNewestImage;
+   }
 
-	public static String imageVersion(String path) {
-		if (path == null || path.isEmpty()) {
-			return "";
-		}
-		final long now = System.currentTimeMillis();
-		final Long last = IMAGE_VERSION_TIME.get(path);
-		if (last != null && now - last < 3000L) {
-			final String cached = IMAGE_VERSION.get(path);
-			if (cached != null) {
-				return cached;
-			}
-		}
-		String version = "";
-		try {
-			final java.io.File file = new java.io.File(path);
-			if (file.isFile()) {
-				version = file.lastModified() + ":" + file.length();
-			}
-		} catch (Throwable ignored) {
-		}
-		if (IMAGE_VERSION.size() > 64) {
-			IMAGE_VERSION.clear();
-			IMAGE_VERSION_TIME.clear();
-		}
-		IMAGE_VERSION.put(path, version);
-		IMAGE_VERSION_TIME.put(path, now);
-		return version;
-	}
+   public static String imageVersion(String path) {
+      if (path != null && !path.isEmpty()) {
+         long now = System.currentTimeMillis();
+         Long last = (Long)IMAGE_VERSION_TIME.get(path);
+         if (last != null && now - last < 3000L) {
+            String cached = (String)IMAGE_VERSION.get(path);
+            if (cached != null) {
+               return cached;
+            }
+         }
 
-	// ==========================================================================================
+         String version = "";
 
-	// ==========================================================================================
-	public static boolean readDirectionFlip(World world, BlockPos pos) {
-		final BlockPos topPos = resolveTopPos(world, pos);
-		if (topPos == null) {
-			return false;
-		}
-		final BlockEntity blockEntity = world.getBlockEntity(topPos);
-		return blockEntity != null && blockEntity.data instanceof MyPSDTopBE && ((MyPSDTopBE) blockEntity.data).isDirectionFlip();
-	}
+         try {
+            File file = new File(path);
+            if (file.isFile()) {
+               version = file.lastModified() + ":" + file.length();
+            }
+         } catch (Throwable var6) {
+         }
 
-	public static void applyDirectionFlip(World world, BlockPos topPos, boolean flip) {
-		writeFlip(world, topPos, flip);
-		final BlockState state = world.getBlockState(topPos);
-		final Direction facing = IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
-		for (int dir = 0; dir < 2; ++dir) {
-			final Direction direction = dir == 0 ? facing.rotateYClockwise() : facing.rotateYCounterclockwise();
-			for (BlockPos pos = topPos.offset(direction); ; pos = pos.offset(direction)) {
-				if (!isFamily(world.getBlockState(pos).getBlock().data)) {
-					break;
-				}
-				writeFlip(world, pos, flip);
-			}
-		}
-	}
+         if (IMAGE_VERSION.size() > 64) {
+            IMAGE_VERSION.clear();
+            IMAGE_VERSION_TIME.clear();
+         }
 
-	private static void writeFlip(World world, BlockPos pos, boolean flip) {
-		final BlockEntity blockEntity = world.getBlockEntity(pos);
-		if (blockEntity != null && blockEntity.data instanceof MyPSDTopBE) {
-			((MyPSDTopBE) blockEntity.data).setDirectionFlip(flip);
-		}
-	}
+         IMAGE_VERSION.put(path, version);
+         IMAGE_VERSION_TIME.put(path, now);
+         return version;
+      } else {
+         return "";
+      }
+   }
 
-	private PSDCustomText() {
-	}
+   public static boolean readDirectionFlip(Level world, BlockPos pos) {
+      BlockPos topPos = resolveTopPos(world, pos);
+      if (topPos == null) {
+         return false;
+      } else {
+         BlockEntity blockEntity = world.getBlockEntity(topPos);
+         return blockEntity instanceof MyPSDTopBE && ((MyPSDTopBE)blockEntity).isDirectionFlip();
+      }
+   }
 
-	public static boolean isFamily(Object blockData) {
-		return blockData instanceof MyPSDTopLcd14;
-	}
+   public static void applyDirectionFlip(Level world, BlockPos topPos, boolean flip) {
+      writeFlip(world, topPos, flip);
+      BlockState state = world.getBlockState(topPos);
+      Direction facing = (Direction)IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
 
-	public static BlockPos resolveTopPos(World world, BlockPos pos) {
-		final BlockState state = world.getBlockState(pos);
-		if (isFamily(state.getBlock().data)) {
-			return pos;
-		}
-		if (state.getBlock().data instanceof BlockPSDGlass) {
-			final IBlock.DoubleBlockHalf half = IBlock.getStatePropertySafe(state, IBlock.HALF);
-			final BlockPos topPos = half == IBlock.DoubleBlockHalf.LOWER ? pos.up(2) : pos.up(1);
-			if (isFamily(world.getBlockState(topPos).getBlock().data)) {
-				return topPos;
-			}
-		}
-		return null;
-	}
+      for(int dir = 0; dir < 2; ++dir) {
+         Direction direction = dir == 0 ? facing.getClockWise() : facing.getCounterClockWise();
 
-	public static String read(World world, BlockPos pos) {
-		final BlockPos topPos = resolveTopPos(world, pos);
-		if (topPos == null) {
-			return DEFAULT_TEXT;
-		}
-		final BlockEntity blockEntity = world.getBlockEntity(topPos);
-		if (blockEntity != null && blockEntity.data instanceof MyPSDTopBE) {
-			return ((MyPSDTopBE) blockEntity.data).getCustomText();
-		}
-		return DEFAULT_TEXT;
-	}
+         for(BlockPos pos = topPos.relative(direction); isFamily(world.getBlockState(pos).getBlock()); pos = pos.relative(direction)) {
+            writeFlip(world, pos, flip);
+         }
+      }
 
-	public static String readImage(World world, BlockPos pos) {
-		final BlockPos topPos = resolveTopPos(world, pos);
-		if (topPos == null) {
-			return "";
-		}
-		final BlockEntity blockEntity = world.getBlockEntity(topPos);
-		if (blockEntity != null && blockEntity.data instanceof MyPSDTopBE) {
-			return ((MyPSDTopBE) blockEntity.data).getCustomImagePath();
-		}
-		return "";
-	}
+   }
 
-	public static void apply(World world, BlockPos topPos, String text, String imagePath) {
-		writeOne(world, topPos, text, imagePath);
-		final BlockState state = world.getBlockState(topPos);
-		final Direction facing = IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
-		for (int dir = 0; dir < 2; ++dir) {
-			final Direction direction = dir == 0 ? facing.rotateYClockwise() : facing.rotateYCounterclockwise();
-			for (BlockPos pos = topPos.offset(direction); ; pos = pos.offset(direction)) {
-				if (!isFamily(world.getBlockState(pos).getBlock().data)) {
-					break;
-				}
-				writeOne(world, pos, text, imagePath);
-			}
-		}
-	}
+   private static void writeFlip(Level world, BlockPos pos, boolean flip) {
+      BlockEntity blockEntity = world.getBlockEntity(pos);
+      if (blockEntity instanceof MyPSDTopBE) {
+         ((MyPSDTopBE)blockEntity).setDirectionFlip(flip);
+      }
 
-	private static void writeOne(World world, BlockPos pos, String text, String imagePath) {
-		final BlockEntity blockEntity = world.getBlockEntity(pos);
-		if (blockEntity != null && blockEntity.data instanceof MyPSDTopBE) {
-			((MyPSDTopBE) blockEntity.data).setCustomText(text);
-			((MyPSDTopBE) blockEntity.data).setCustomImagePath(imagePath);
-		}
-	}
+   }
 
-	public static void apply(World world, BlockPos topPos, String text) {
-		writeOne(world, topPos, text);
-		final BlockState state = world.getBlockState(topPos);
-		final Direction facing = IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
-		for (int dir = 0; dir < 2; ++dir) {
-			final Direction direction = dir == 0 ? facing.rotateYClockwise() : facing.rotateYCounterclockwise();
-			for (BlockPos pos = topPos.offset(direction); ; pos = pos.offset(direction)) {
-				if (!isFamily(world.getBlockState(pos).getBlock().data)) {
-					break;
-				}
-				writeOne(world, pos, text);
-			}
-		}
-	}
+   private PSDCustomText() {
+   }
 
-	private static void writeOne(World world, BlockPos pos, String text) {
-		final BlockEntity blockEntity = world.getBlockEntity(pos);
-		if (blockEntity != null && blockEntity.data instanceof MyPSDTopBE) {
-			((MyPSDTopBE) blockEntity.data).setCustomText(text);
-		}
-	}
+   public static boolean isFamily(Block block) {
+      return block instanceof MyPSDTopLcd14;
+   }
+
+   public static boolean hasServerStore() {
+      return serverStoreValid;
+   }
+
+   public static String serverStoreTextValue() {
+      String value = serverStoreText;
+      return value != null && !value.isEmpty() ? value : "\u5730\u94c1\u8f68\u4ea4";
+   }
+
+   public static String serverStoreImagePathValue() {
+      String value = serverStoreImagePath;
+      return value == null ? "" : value;
+   }
+
+   public static String serverStoreImageNameValue() {
+      String value = serverStoreImageName;
+      return value == null ? "" : value;
+   }
+
+   public static void setServerStore(String text, String imageName, String localImagePath) {
+      serverStoreText = text == null ? "" : text;
+      serverStoreImageName = imageName == null ? "" : imageName;
+      serverStoreImagePath = localImagePath == null ? "" : localImagePath;
+      serverStoreValid = true;
+   }
+
+   public static File serverStoreDir() {
+      return new File(FMLPaths.GAMEDIR.get().toFile(), "psd_lcd_server");
+   }
+
+   public static void ensureServerStoreLoaded() {
+      PSDCustomTextStore.ensureInit(serverStoreDir());
+   }
+
+   public static File receivedImageFile(String name) {
+      String safe = PSDCustomTextStore.sanitiseName(name);
+      if (safe.isEmpty()) {
+         return null;
+      } else {
+         File dir = new File(FMLPaths.GAMEDIR.get().toFile(), "psd_lcd_images");
+         if (!dir.isDirectory()) {
+            dir.mkdirs();
+         }
+
+         return new File(dir, safe);
+      }
+   }
+
+   public static BlockPos resolveTopPos(Level world, BlockPos pos) {
+      BlockState state = world.getBlockState(pos);
+      if (isFamily(state.getBlock())) {
+         return pos;
+      } else {
+         if (state.getBlock() instanceof BlockPSDGlass) {
+            DoubleBlockHalf half = (DoubleBlockHalf)IBlock.getStatePropertySafe(state, IBlock.HALF);
+            BlockPos topPos = half == DoubleBlockHalf.LOWER ? pos.above(2) : pos.above(1);
+            if (isFamily(world.getBlockState(topPos).getBlock())) {
+               return topPos;
+            }
+         }
+
+         return null;
+      }
+   }
+
+   public static String read(Level world, BlockPos pos) {
+      if (serverStoreValid) {
+         return serverStoreTextValue();
+      } else {
+         BlockPos topPos = resolveTopPos(world, pos);
+         if (topPos == null) {
+            return "\u5730\u94c1\u8f68\u4ea4";
+         } else {
+            BlockEntity blockEntity = world.getBlockEntity(topPos);
+            return blockEntity instanceof MyPSDTopBE ? ((MyPSDTopBE)blockEntity).getCustomText() : "\u5730\u94c1\u8f68\u4ea4";
+         }
+      }
+   }
+
+   public static String readImage(Level world, BlockPos pos) {
+      if (serverStoreValid) {
+         return serverStoreImagePathValue();
+      } else {
+         BlockPos topPos = resolveTopPos(world, pos);
+         if (topPos == null) {
+            return "";
+         } else {
+            BlockEntity blockEntity = world.getBlockEntity(topPos);
+            return blockEntity instanceof MyPSDTopBE ? ((MyPSDTopBE)blockEntity).getCustomImagePath() : "";
+         }
+      }
+   }
+
+   public static void apply(Level world, BlockPos topPos, String text, String imagePath) {
+      writeOne(world, topPos, text, imagePath);
+      BlockState state = world.getBlockState(topPos);
+      Direction facing = (Direction)IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
+
+      for(int dir = 0; dir < 2; ++dir) {
+         Direction direction = dir == 0 ? facing.getClockWise() : facing.getCounterClockWise();
+
+         for(BlockPos pos = topPos.relative(direction); isFamily(world.getBlockState(pos).getBlock()); pos = pos.relative(direction)) {
+            writeOne(world, pos, text, imagePath);
+         }
+      }
+
+   }
+
+   private static void writeOne(Level world, BlockPos pos, String text, String imagePath) {
+      BlockEntity blockEntity = world.getBlockEntity(pos);
+      if (blockEntity instanceof MyPSDTopBE) {
+         ((MyPSDTopBE)blockEntity).setCustomText(text);
+         ((MyPSDTopBE)blockEntity).setCustomImagePath(imagePath);
+      }
+
+   }
+
+   public static void apply(Level world, BlockPos topPos, String text) {
+      writeOne(world, topPos, text);
+      BlockState state = world.getBlockState(topPos);
+      Direction facing = (Direction)IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
+
+      for(int dir = 0; dir < 2; ++dir) {
+         Direction direction = dir == 0 ? facing.getClockWise() : facing.getCounterClockWise();
+
+         for(BlockPos pos = topPos.relative(direction); isFamily(world.getBlockState(pos).getBlock()); pos = pos.relative(direction)) {
+            writeOne(world, pos, text);
+         }
+      }
+
+   }
+
+   private static void writeOne(Level world, BlockPos pos, String text) {
+      BlockEntity blockEntity = world.getBlockEntity(pos);
+      if (blockEntity instanceof MyPSDTopBE) {
+         ((MyPSDTopBE)blockEntity).setCustomText(text);
+      }
+
+   }
 }

@@ -1,113 +1,118 @@
 package com.mtrpsdlcd.block;
 
+import com.mtrpsdlcd.Diag;
 import com.mtrpsdlcd.registry.Items;
-import org.mtr.mapping.holder.ActionResult;
-import org.mtr.mapping.holder.BlockHitResult;
-import org.mtr.mapping.holder.BlockPos;
-import org.mtr.mapping.holder.BlockState;
-import org.mtr.mapping.holder.Direction;
-import org.mtr.mapping.holder.Hand;
-import org.mtr.mapping.holder.Item;
-import org.mtr.mapping.holder.PlayerEntity;
-import org.mtr.mapping.holder.Property;
-import org.mtr.mapping.holder.World;
-import org.mtr.mod.block.BlockPSDGlass;
-import org.mtr.mod.block.BlockPSDTop;
-import org.mtr.mod.block.IBlock;
-
 import javax.annotation.Nonnull;
+import mtr.block.BlockPSDGlass;
+import mtr.block.BlockPSDTop;
+import mtr.block.IBlock;
+import mtr.block.BlockPSDTop.EnumPersistent;
+import mtr.block.IBlock.EnumSide;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.world.phys.BlockHitResult;
 
 public class MyPSDGlassLcd13 extends BlockPSDGlass {
-	public MyPSDGlassLcd13() {
-		super(0);
-	}
+   public MyPSDGlassLcd13() {
+      super(0);
+   }
 
-	@Override
-	@Nonnull
-	public Item asItem2() {
-		return Items.PSD_GLASS_LCD13.get();
-	}
+   @Nonnull
+   public Item asItem() {
+      return (Item)Items.PSD_GLASS_LCD13.get();
+   }
 
-	@Override
-	@Nonnull
-	public ActionResult onUse2(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult blockHitResult) {
-		return IBlock.checkHoldingBrush(world, player, () -> {
+   @Nonnull
+   public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult blockHitResult) {
+      return IBlock.checkHoldingBrush(world, player, () -> {
+         for(int dy = -1; dy <= 1; ++dy) {
+            BlockPos upPos = pos.above(dy);
+            BlockState upState = world.getBlockState(upPos);
+            if (upState.getBlock() instanceof MyPSDGlassLcd13) {
+               this.connectGlass(world, upPos, upState);
+            }
+         }
 
-			for (int dy = -1; dy <= 1; dy++) {
-				final BlockPos upPos = pos.up(dy);
-				final BlockState upState = world.getBlockState(upPos);
-				if (upState.getBlock().data instanceof MyPSDGlassLcd13) {
-					connectGlass(world, upPos, upState);
-				}
-			}
+         DoubleBlockHalf half = (DoubleBlockHalf)IBlock.getStatePropertySafe(state, IBlock.HALF);
+         BlockPos topPos = half == DoubleBlockHalf.LOWER ? pos.above(2) : pos.above(1);
+         BlockState topState = world.getBlockState(topPos);
+         if (topState.getBlock() instanceof MyPSDTopLcd13) {
+            BlockPSDTop.EnumPersistent current = (BlockPSDTop.EnumPersistent)IBlock.getStatePropertySafe(topState, BlockPSDTop.PERSISTENT);
+            BlockPSDTop.EnumPersistent next = current == EnumPersistent.ROUTE ? EnumPersistent.NONE : EnumPersistent.ROUTE;
+            Direction facing = (Direction)IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
+            this.toggleTopPersistent(world, topPos, next);
+            this.propagateGlassChain(world, pos, facing.getClockWise(), next);
+            this.propagateGlassChain(world, pos, facing.getCounterClockWise(), next);
+         }
 
-			final IBlock.DoubleBlockHalf half = IBlock.getStatePropertySafe(state, IBlock.HALF);
-			final BlockPos topPos = half == IBlock.DoubleBlockHalf.LOWER ? pos.up(2) : pos.up(1);
-			final BlockState topState = world.getBlockState(topPos);
-			if (topState.getBlock().data instanceof MyPSDTopLcd13) {
-				final BlockPSDTop.EnumPersistent current = IBlock.getStatePropertySafe(topState, BlockPSDTop.PERSISTENT);
-				final BlockPSDTop.EnumPersistent next = current == BlockPSDTop.EnumPersistent.ROUTE ? BlockPSDTop.EnumPersistent.NONE : BlockPSDTop.EnumPersistent.ROUTE;
-				final Direction facing = IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
-				toggleTopPersistent(world, topPos, next);
-				propagateGlassChain(world, pos, facing.rotateYClockwise(), next);
-				propagateGlassChain(world, pos, facing.rotateYCounterclockwise(), next);
-			}
-		});
-	}
+      });
+   }
 
-	private void connectGlass(World world, BlockPos pos, BlockState state) {
-		final Direction facing = IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
+   private void toggleTopPersistent(Level world, BlockPos topPos, BlockPSDTop.EnumPersistent value) {
+      BlockState top = world.getBlockState(topPos);
+      if (top.getBlock() instanceof MyPSDTopLcd13) {
+         world.setBlockAndUpdate(topPos, (BlockState)top.setValue(BlockPSDTop.PERSISTENT, value));
+      }
 
-		final BlockPos leftPos = pos.offset(facing.rotateYCounterclockwise());
-		final BlockState leftState = world.getBlockState(leftPos);
-		final boolean hasLeft = leftState.getBlock().data instanceof MyPSDGlassLcd13;
-		if (hasLeft) {
-			final IBlock.EnumSide leftSide = IBlock.getStatePropertySafe(leftState, IBlock.SIDE_EXTENDED);
-			final IBlock.EnumSide newLeft = leftSide == IBlock.EnumSide.RIGHT ? IBlock.EnumSide.MIDDLE : (leftSide == IBlock.EnumSide.SINGLE ? IBlock.EnumSide.LEFT : leftSide);
-			world.setBlockState(leftPos, leftState.with(new Property<>(IBlock.SIDE_EXTENDED.data), newLeft));
-		}
+   }
 
-		final BlockPos rightPos = pos.offset(facing.rotateYClockwise());
-		final BlockState rightState = world.getBlockState(rightPos);
-		final boolean hasRight = rightState.getBlock().data instanceof MyPSDGlassLcd13;
-		if (hasRight) {
-			final IBlock.EnumSide rightSide = IBlock.getStatePropertySafe(rightState, IBlock.SIDE_EXTENDED);
-			final IBlock.EnumSide newRight = rightSide == IBlock.EnumSide.LEFT ? IBlock.EnumSide.MIDDLE : (rightSide == IBlock.EnumSide.SINGLE ? IBlock.EnumSide.RIGHT : rightSide);
-			world.setBlockState(rightPos, rightState.with(new Property<>(IBlock.SIDE_EXTENDED.data), newRight));
-		}
+   private void propagateGlassChain(Level world, BlockPos glassPos, Direction dir, BlockPSDTop.EnumPersistent value) {
+      int i = 1;
 
-		final IBlock.EnumSide ownSide = hasLeft && hasRight ? IBlock.EnumSide.MIDDLE : (hasLeft ? IBlock.EnumSide.RIGHT : (hasRight ? IBlock.EnumSide.LEFT : IBlock.EnumSide.SINGLE));
-		world.setBlockState(pos, state.with(new Property<>(IBlock.SIDE_EXTENDED.data), ownSide));
-	}
+      while(true) {
+         BlockPos nextGlass = glassPos.relative(dir, i);
+         BlockState nextState = world.getBlockState(nextGlass);
+         if (!(nextState.getBlock() instanceof MyPSDGlassLcd13)) {
+            return;
+         }
 
-	private void toggleTopPersistent(World world, BlockPos topPos, BlockPSDTop.EnumPersistent value) {
-		final BlockState top = world.getBlockState(topPos);
-		if (top.getBlock().data instanceof MyPSDTopLcd13) {
-			world.setBlockState(topPos, top.with(new Property<>(BlockPSDTop.PERSISTENT.data), value));
-		}
-	}
+         DoubleBlockHalf half = (DoubleBlockHalf)IBlock.getStatePropertySafe(nextState, IBlock.HALF);
+         this.toggleTopPersistent(world, half == DoubleBlockHalf.LOWER ? nextGlass.above(2) : nextGlass.above(1), value);
+         ++i;
+      }
+   }
 
-	private void propagateGlassChain(World world, BlockPos glassPos, Direction dir, BlockPSDTop.EnumPersistent value) {
-		for (int i = 1; ; i++) {
-			final BlockPos nextGlass = glassPos.offset(dir, i);
-			final BlockState nextState = world.getBlockState(nextGlass);
-			if (!(nextState.getBlock().data instanceof MyPSDGlassLcd13)) {
-				break;
-			}
-			final IBlock.DoubleBlockHalf half = IBlock.getStatePropertySafe(nextState, IBlock.HALF);
-			toggleTopPersistent(world, half == IBlock.DoubleBlockHalf.LOWER ? nextGlass.up(2) : nextGlass.up(1), value);
-		}
-	}
+   private void connectGlass(Level world, BlockPos pos, BlockState state) {
+      Direction facing = (Direction)IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
+      BlockPos leftPos = pos.relative(facing.getCounterClockWise());
+      BlockState leftState = world.getBlockState(leftPos);
+      boolean hasLeft = leftState.getBlock() instanceof MyPSDGlassLcd13;
+      if (hasLeft) {
+         IBlock.EnumSide leftSide = (IBlock.EnumSide)IBlock.getStatePropertySafe(leftState, IBlock.SIDE_EXTENDED);
+         IBlock.EnumSide newLeft = leftSide == EnumSide.RIGHT ? EnumSide.MIDDLE : (leftSide == EnumSide.SINGLE ? EnumSide.LEFT : leftSide);
+         world.setBlockAndUpdate(leftPos, (BlockState)leftState.setValue(IBlock.SIDE_EXTENDED, newLeft));
+      }
 
-	@Override
-	public void onBreak2(World world, BlockPos pos, BlockState state, PlayerEntity player) {
+      BlockPos rightPos = pos.relative(facing.getClockWise());
+      BlockState rightState = world.getBlockState(rightPos);
+      boolean hasRight = rightState.getBlock() instanceof MyPSDGlassLcd13;
+      if (hasRight) {
+         IBlock.EnumSide rightSide = (IBlock.EnumSide)IBlock.getStatePropertySafe(rightState, IBlock.SIDE_EXTENDED);
+         IBlock.EnumSide newRight = rightSide == EnumSide.LEFT ? EnumSide.MIDDLE : (rightSide == EnumSide.SINGLE ? EnumSide.RIGHT : rightSide);
+         world.setBlockAndUpdate(rightPos, (BlockState)rightState.setValue(IBlock.SIDE_EXTENDED, newRight));
+      }
 
-		final IBlock.DoubleBlockHalf half = IBlock.getStatePropertySafe(state, IBlock.HALF);
-		final BlockPos topPos = half == IBlock.DoubleBlockHalf.LOWER ? pos.up(2) : pos.up(1);
-		final BlockState topState = world.getBlockState(topPos);
-		if (topState.getBlock().data instanceof MyPSDTopLcd13) {
-			world.setBlockState(topPos, org.mtr.mapping.holder.Blocks.getAirMapped().getDefaultState(), 34);
-		}
-		super.onBreak2(world, pos, state, player);
-	}
+      IBlock.EnumSide ownSide = hasLeft && hasRight ? EnumSide.MIDDLE : (hasLeft ? EnumSide.RIGHT : (hasRight ? EnumSide.LEFT : EnumSide.SINGLE));
+      world.setBlockAndUpdate(pos, (BlockState)state.setValue(IBlock.SIDE_EXTENDED, ownSide));
+   }
+
+   public void playerWillDestroy(Level world, BlockPos pos, BlockState state, Player player) {
+      Diag.breakLog(state, pos, player);
+      DoubleBlockHalf half = (DoubleBlockHalf)IBlock.getStatePropertySafe(state, IBlock.HALF);
+      BlockPos topPos = half == DoubleBlockHalf.LOWER ? pos.above(2) : pos.above(1);
+      BlockState topState = world.getBlockState(topPos);
+      if (topState.getBlock() instanceof MyPSDTopLcd13) {
+         world.setBlock(topPos, Blocks.AIR.defaultBlockState(), 34);
+      }
+
+      super.playerWillDestroy(world, pos, state, player);
+   }
 }

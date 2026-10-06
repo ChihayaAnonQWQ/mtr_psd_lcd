@@ -2,70 +2,71 @@ package com.mtrpsdlcd.block;
 
 import com.mtrpsdlcd.block.entity.MyPSDTopLcd13BE;
 import com.mtrpsdlcd.registry.Items;
-import org.mtr.mapping.holder.ActionResult;
-import org.mtr.mapping.holder.BlockHitResult;
-import org.mtr.mapping.holder.BlockPos;
-import org.mtr.mapping.holder.BlockState;
-import org.mtr.mapping.holder.BlockView;
-import org.mtr.mapping.holder.Direction;
-import org.mtr.mapping.holder.Hand;
-import org.mtr.mapping.holder.Item;
-import org.mtr.mapping.holder.PlayerEntity;
-import org.mtr.mapping.holder.Property;
-import org.mtr.mapping.holder.ShapeContext;
-import org.mtr.mapping.holder.VoxelShape;
-import org.mtr.mapping.holder.World;
-import org.mtr.mapping.mapper.BlockEntityExtension;
-import org.mtr.mod.block.BlockPSDTop;
-import org.mtr.mod.block.IBlock;
-
 import javax.annotation.Nonnull;
+import mtr.block.BlockPSDTop;
+import mtr.block.IBlock;
+import mtr.block.BlockPSDTop.EnumPersistent;
+import mtr.mappings.BlockEntityMapper;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class MyPSDTopLcd13 extends MyPSDTop implements IStandaloneTopModule {
-	@Override
-	@Nonnull
-	public Item asItem2() {
-		return Items.PSD_GLASS_LCD13.get();
-	}
+   public MyPSDTopLcd13() {
+   }
 
-	@Override
-	@Nonnull
-	public BlockEntityExtension createBlockEntity(BlockPos blockPos, BlockState blockState) {
-		return new MyPSDTopLcd13BE(blockPos, blockState);
-	}
+   @Nonnull
+   public Item asItem() {
+      return (Item)Items.PSD_GLASS_LCD13.get();
+   }
 
-	@Override
-	@Nonnull
-	public ActionResult onUse2(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult blockHitResult) {
-		return IBlock.checkHoldingBrush(world, player, () -> {
-			final BlockPSDTop.EnumPersistent current = IBlock.getStatePropertySafe(state, BlockPSDTop.PERSISTENT);
-			final BlockPSDTop.EnumPersistent next = current == BlockPSDTop.EnumPersistent.ROUTE ? BlockPSDTop.EnumPersistent.NONE : BlockPSDTop.EnumPersistent.ROUTE;
-			world.setBlockState(pos, state.with(new Property<>(BlockPSDTop.PERSISTENT.data), next));
-			final Direction facing = IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
-			propagatePersistent(world, pos, facing.rotateYClockwise(), next);
-			propagatePersistent(world, pos, facing.rotateYCounterclockwise(), next);
-		});
-	}
+   @Nonnull
+   public BlockEntityMapper createBlockEntity(BlockPos blockPos, BlockState blockState) {
+      return new MyPSDTopLcd13BE(blockPos, blockState);
+   }
 
-	private void propagatePersistent(World world, BlockPos pos, Direction dir, BlockPSDTop.EnumPersistent value) {
-		for (int i = 1; ; i++) {
-			final BlockPos nextPos = pos.offset(dir, i);
-			final BlockState neighbor = world.getBlockState(nextPos);
-			if (!(neighbor.getBlock().data instanceof MyPSDTopLcd13)) {
-				break;
-			}
-			world.setBlockState(nextPos, neighbor.with(new Property<>(BlockPSDTop.PERSISTENT.data), value));
-		}
-	}
+   @Nonnull
+   public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult blockHitResult) {
+      return IBlock.checkHoldingBrush(world, player, () -> {
+         BlockPSDTop.EnumPersistent current = (BlockPSDTop.EnumPersistent)IBlock.getStatePropertySafe(state, BlockPSDTop.PERSISTENT);
+         BlockPSDTop.EnumPersistent next = current == EnumPersistent.ROUTE ? EnumPersistent.NONE : EnumPersistent.ROUTE;
+         world.setBlockAndUpdate(pos, (BlockState)state.setValue(BlockPSDTop.PERSISTENT, next));
+         Direction facing = (Direction)IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
+         this.propagatePersistent(world, pos, facing.getClockWise(), next);
+         this.propagatePersistent(world, pos, facing.getCounterClockWise(), next);
+      });
+   }
 
-	@Override
-	@Nonnull
-	public VoxelShape getOutlineShape2(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-		return IBlock.getVoxelShapeByDirection(0.0, 0.0, 0.0, 16.0, 16.0, 6.0, IBlock.getStatePropertySafe(state, BlockPSDTop.FACING));
-	}
+   private void propagatePersistent(Level world, BlockPos pos, Direction dir, BlockPSDTop.EnumPersistent value) {
+      int i = 1;
 
-	@Override
-	public void onBreak2(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-		super.onBreak2(world, pos, state, player);
-	}
+      while(true) {
+         BlockPos nextPos = pos.relative(dir, i);
+         BlockState neighbor = world.getBlockState(nextPos);
+         if (!(neighbor.getBlock() instanceof MyPSDTopLcd13)) {
+            return;
+         }
+
+         world.setBlockAndUpdate(nextPos, (BlockState)neighbor.setValue(BlockPSDTop.PERSISTENT, value));
+         ++i;
+      }
+   }
+
+   @Nonnull
+   public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
+      return IBlock.getVoxelShapeByDirection(0.0D, 0.0D, 0.0D, 16.0D, 16.0D, 6.0D, (Direction)IBlock.getStatePropertySafe(state, BlockPSDTop.FACING));
+   }
+
+   public void playerWillDestroy(Level world, BlockPos pos, BlockState state, Player player) {
+      super.playerWillDestroy(world, pos, state, player);
+   }
 }

@@ -1,70 +1,88 @@
 package com.mtrpsdlcd.block.entity;
 
-import com.mtrpsdlcd.block.PSDCustomText;
 import com.mtrpsdlcd.registry.BlockEntities;
-import org.mtr.mapping.holder.BlockEntityType;
-import org.mtr.mapping.holder.BlockPos;
-import org.mtr.mapping.holder.BlockState;
-import org.mtr.mapping.holder.CompoundTag;
-import org.mtr.mod.block.BlockPSDTop;
+import mtr.block.BlockPSDTop;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
 
-public class MyPSDTopBE extends BlockPSDTop.BlockEntityBase {
+public class MyPSDTopBE extends BlockPSDTop.TileEntityRouteBase {
+   private static final String TAG_CUSTOM_TEXT = "customText";
+   private static final String TAG_CUSTOM_IMAGE = "customImage";
+   private static final String TAG_DIRECTION_FLIP = "directionFlip";
+   private String customText = "\u5730\u94c1\u8f68\u4ea4";
+   private String customImagePath = "";
+   private boolean directionFlip = false;
 
-	private static final String TAG_CUSTOM_TEXT = "customText";
-	private static final String TAG_CUSTOM_IMAGE = "customImage";
+   public boolean isDirectionFlip() {
+      return this.directionFlip;
+   }
 
-	private static final String TAG_DIRECTION_FLIP = "directionFlip";
-	private String customText = PSDCustomText.DEFAULT_TEXT;
-	private String customImagePath = "";
-	private boolean directionFlip = false;
+   public void setDirectionFlip(boolean flip) {
+      this.directionFlip = flip;
+      this.setChanged();
+      this.syncToClient();
+   }
 
-	public boolean isDirectionFlip() {
-		return directionFlip;
-	}
+   public String getCustomText() {
+      return this.customText != null && !this.customText.isEmpty() ? this.customText : "\u5730\u94c1\u8f68\u4ea4";
+   }
 
-	public void setDirectionFlip(boolean flip) {
-		this.directionFlip = flip;
-		markDirty2();
-	}
+   public void setCustomText(String text) {
+      this.customText = text == null ? "" : text;
+      this.setChanged();
+      this.syncToClient();
+   }
 
-	public String getCustomText() {
-		return customText == null || customText.isEmpty() ? PSDCustomText.DEFAULT_TEXT : customText;
-	}
+   public String getCustomImagePath() {
+      return this.customImagePath == null ? "" : this.customImagePath;
+   }
 
-	public void setCustomText(String text) {
-		this.customText = text == null ? "" : text;
-		markDirty2();
-	}
+   public void setCustomImagePath(String path) {
+      this.customImagePath = path == null ? "" : path;
+      this.setChanged();
+      this.syncToClient();
+   }
 
-	public String getCustomImagePath() {
-		return customImagePath == null ? "" : customImagePath;
-	}
+   public net.minecraft.network.protocol.Packet<net.minecraft.network.protocol.game.ClientGamePacketListener> getUpdatePacket() {
+      return ClientboundBlockEntityDataPacket.create(this);
+   }
 
-	public void setCustomImagePath(String path) {
-		this.customImagePath = path == null ? "" : path;
-		markDirty2();
-	}
+   public CompoundTag getUpdateTag() {
+      CompoundTag nbt = super.getUpdateTag();
+      this.writeCompoundTag(nbt);
+      return nbt;
+   }
 
-	@Override
-	public void writeCompoundTag(CompoundTag compoundTag) {
-		super.writeCompoundTag(compoundTag);
-		compoundTag.putString(TAG_CUSTOM_TEXT, customText == null ? "" : customText);
-		compoundTag.putString(TAG_CUSTOM_IMAGE, customImagePath == null ? "" : customImagePath);
-		compoundTag.putBoolean(TAG_DIRECTION_FLIP, directionFlip);
-	}
+   protected void syncToClient() {
+      if (this.level instanceof ServerLevel) {
+         ((ServerLevel)this.level).getChunkSource().blockChanged(this.worldPosition);
+      }
 
-	@Override
-	public void readCompoundTag(CompoundTag compoundTag) {
-		super.readCompoundTag(compoundTag);
-		customText = compoundTag.contains(TAG_CUSTOM_TEXT) ? compoundTag.getString(TAG_CUSTOM_TEXT) : PSDCustomText.DEFAULT_TEXT;
-		customImagePath = compoundTag.contains(TAG_CUSTOM_IMAGE) ? compoundTag.getString(TAG_CUSTOM_IMAGE) : "";
-		directionFlip = compoundTag.contains(TAG_DIRECTION_FLIP) && compoundTag.getBoolean(TAG_DIRECTION_FLIP);
-	}
-	public MyPSDTopBE(BlockPos pos, BlockState state) {
-		this(BlockEntities.PSD_TOP.get(), pos, state);
-	}
+   }
 
-	protected MyPSDTopBE(BlockEntityType<?> type, BlockPos pos, BlockState state) {
-		super(type, pos, state);
-	}
+   public void writeCompoundTag(CompoundTag compoundTag) {
+      super.writeCompoundTag(compoundTag);
+      compoundTag.putString("customText", this.customText == null ? "" : this.customText);
+      compoundTag.putString("customImage", this.customImagePath == null ? "" : this.customImagePath);
+      compoundTag.putBoolean("directionFlip", this.directionFlip);
+   }
+
+   public void readCompoundTag(CompoundTag compoundTag) {
+      super.readCompoundTag(compoundTag);
+      this.customText = compoundTag.contains("customText") ? compoundTag.getString("customText") : "\u5730\u94c1\u8f68\u4ea4";
+      this.customImagePath = compoundTag.contains("customImage") ? compoundTag.getString("customImage") : "";
+      this.directionFlip = compoundTag.contains("directionFlip") && compoundTag.getBoolean("directionFlip");
+   }
+
+   public MyPSDTopBE(BlockPos pos, BlockState state) {
+      this((BlockEntityType)BlockEntities.PSD_TOP.get(), pos, state);
+   }
+
+   protected MyPSDTopBE(net.minecraft.world.level.block.entity.BlockEntityType<?> type, net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
+      super(type, pos, state);
+   }
 }

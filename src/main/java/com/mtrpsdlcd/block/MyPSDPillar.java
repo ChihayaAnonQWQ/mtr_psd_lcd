@@ -1,59 +1,54 @@
 package com.mtrpsdlcd.block;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.item.ItemPlacementContext;
-import net.minecraft.state.StateManager;
-import net.minecraft.state.property.Properties;
-import net.minecraft.state.property.Property;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.world.BlockView;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class MyPSDPillar extends Block {
-	public static final Property<Direction> FACING = Properties.HORIZONTAL_FACING;
+   public static final net.minecraft.world.level.block.state.properties.Property<net.minecraft.core.Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
 
-	public MyPSDPillar() {
+   public MyPSDPillar() {
+      super(Properties.of().mapColor(MapColor.COLOR_GRAY).requiresCorrectToolForDrops().strength(2.0F).noOcclusion());
+      this.registerDefaultState((BlockState)this.defaultBlockState().setValue(FACING, Direction.NORTH));
+   }
 
-		super(((org.mtr.mapping.holder.BlockSettings) org.mtr.mod.Blocks.createDefaultBlockSettings(false)).data);
-		setDefaultState(getDefaultState().with(FACING, Direction.NORTH));
-	}
+   protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<net.minecraft.world.level.block.Block, net.minecraft.world.level.block.state.BlockState> builder) {
+      builder.add(new Property[]{FACING});
+   }
 
-	@Override
-	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-		builder.add(FACING);
-	}
+   public BlockState getStateForPlacement(BlockPlaceContext context) {
+      Direction horizontal = context.getPlayer() != null ? context.getPlayer().getDirection() : context.getNearestLookingDirection().getOpposite();
+      Direction safe = horizontal != Direction.UP && horizontal != Direction.DOWN ? horizontal : Direction.NORTH;
+      return (BlockState)this.defaultBlockState().setValue(FACING, safe);
+   }
 
-	@Override
-	public BlockState getPlacementState(ItemPlacementContext context) {
+   public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
+      return shapeFor(state);
+   }
 
-		final Direction horizontal = context.getPlayer() != null ? context.getPlayer().getHorizontalFacing() : context.getPlayerLookDirection().getOpposite();
-		final Direction safe = horizontal == Direction.UP || horizontal == Direction.DOWN ? Direction.NORTH : horizontal;
-		return getDefaultState().with(FACING, safe);
-	}
+   public VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
+      return shapeFor(state);
+   }
 
-	@Override
-	public VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-		return shapeFor(state);
-	}
-
-	@Override
-	public VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-		return shapeFor(state);
-	}
-
-	private static VoxelShape shapeFor(BlockState state) {
-		switch (state.get(FACING)) {
-			case SOUTH:
-				return Block.createCuboidShape(5, 0, 10, 11, 16, 16);
-			case WEST:
-				return Block.createCuboidShape(0, 0, 5, 6, 16, 11);
-			case EAST:
-				return Block.createCuboidShape(10, 0, 5, 16, 16, 11);
-			default:
-				return Block.createCuboidShape(5, 0, 0, 11, 16, 6);
-		}
-	}
+   private static VoxelShape shapeFor(BlockState state) {
+      switch ((Direction)state.getValue(FACING)) {
+         case SOUTH:
+            return Block.box(5.0D, 0.0D, 10.0D, 11.0D, 16.0D, 16.0D);
+         case WEST:
+            return Block.box(0.0D, 0.0D, 5.0D, 6.0D, 16.0D, 11.0D);
+         case EAST:
+            return Block.box(10.0D, 0.0D, 5.0D, 16.0D, 16.0D, 11.0D);
+         default:
+            return Block.box(5.0D, 0.0D, 0.0D, 11.0D, 16.0D, 6.0D);
+      }
+   }
 }

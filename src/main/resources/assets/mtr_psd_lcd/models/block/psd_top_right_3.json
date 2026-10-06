@@ -1,5 +1,5 @@
 {
-  "parent": "mtr:block/psd_top_right_base",
+  "parent": "mtr_psd_lcd:block/psd_top_right_base_clean",
   "textures": {
     "particle": "mtr:block/psd_top"
   }

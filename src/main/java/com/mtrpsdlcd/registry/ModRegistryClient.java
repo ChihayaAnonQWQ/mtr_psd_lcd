@@ -1,52 +1,54 @@
 package com.mtrpsdlcd.registry;
 
-import com.mtrpsdlcd.Constants;
 import com.mtrpsdlcd.block.PSDCustomText;
-import org.mtr.mapping.holder.BlockPos;
-import org.mtr.mapping.holder.RenderLayer;
-import org.mtr.mapping.holder.World;
-import org.mtr.mapping.registry.PacketHandler;
-import org.mtr.mapping.mapper.BlockEntityExtension;
-import org.mtr.mapping.mapper.BlockEntityRenderer;
-import org.mtr.mapping.registry.BlockEntityTypeRegistryObject;
-import org.mtr.mapping.registry.BlockRegistryObject;
-import org.mtr.mapping.registry.RegistryClient;
-
-import java.util.function.Function;
+import com.mtrpsdlcd.client.PacketCustomTextClient;
+import mtr.mappings.RegistryUtilitiesClient;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.Block;
 
 public class ModRegistryClient {
-	public static final RegistryClient REGISTRY_CLIENT = new RegistryClient(ModRegistry.REGISTRY);
+   private ModRegistryClient() {
+   }
 
-	public static <T extends BlockEntityTypeRegistryObject<U>, U extends BlockEntityExtension> void registerBlockEntityRenderer(T blockEntityType, Function<BlockEntityRenderer.Argument, BlockEntityRenderer<U>> rendererInstance) {
-		REGISTRY_CLIENT.registerBlockEntityRenderer(blockEntityType, rendererInstance);
-	}
+   public static void saveCustomText(BlockPos topPos, String text, int imageState, String imageName, byte[] imageBytes, String localImagePath) {
+      Minecraft client = Minecraft.getInstance();
+      if (client != null && client.level != null) {
+         PSDCustomText.apply(client.level, topPos, text, imageState == 1 && localImagePath != null ? localImagePath : "");
+         PacketCustomTextClient.sendUpload(topPos, text, imageState, imageName, imageBytes);
+      }
+   }
 
-	public static void registerBlockRenderType(RenderLayer renderLayer, BlockRegistryObject... blocks) {
-		for (BlockRegistryObject block : blocks) {
-			REGISTRY_CLIENT.registerBlockRenderType(renderLayer, block);
-		}
-	}
+   /** Called while the mod is constructed on the physical client. */
+   public static void register() {
+      PacketCustomTextClient.registerReceiver();
+   }
 
-	public static void sendPacketToServer(PacketHandler packet) {
-		REGISTRY_CLIENT.sendPacketToServer(packet);
-	}
+   /** Called on FMLClientSetupEvent, on the client thread. */
+   public static void registerClientSetup() {
+      registerRenderTypes();
+      BlockEntityRenderers.registerClient();
+   }
 
-	public static void setupPackets(String channel) {
-		REGISTRY_CLIENT.setupPackets(Constants.id(channel));
-	}
-
-	public static void applyCustomTextLocally(BlockPos topPos, String text, String imagePath) {
-		final net.minecraft.client.MinecraftClient client = net.minecraft.client.MinecraftClient.getInstance();
-		if (client.world == null) {
-			return;
-		}
-		PSDCustomText.apply(new World(client.world), topPos, text, imagePath);
-	}
-
-	public static void register() {
-		Blocks.registerClient();
-		BlockEntityRenderers.registerClient();
-		REGISTRY_CLIENT.init();
-		setupPackets("packet");
-	}
+   private static void registerRenderTypes() {
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_DOOR.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_GLASS.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_DOOR_2.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_GLASS_2.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_DOOR_LCD2.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_DOOR_LCD3.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_DOOR_LCD4.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_DOOR_LCD5.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_DOOR_LCD6.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_DOOR_LCD7.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_GLASS_LCD13.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_GLASS_LCD14.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_DOOR_LCD15.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_GLASS_LCD17.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_GLASS_LCD21.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_GLASS_LCD22.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.cutout(), (Block)Blocks.PSD_DOOR_LCD19.get());
+      RegistryUtilitiesClient.registerRenderType(RenderType.solid(), (Block)Blocks.PSD_PILLAR.get());
+   }
 }

@@ -1,138 +1,138 @@
 package com.mtrpsdlcd.block;
 
+import com.mtrpsdlcd.block.entity.MyPSDTopLcd14BE;
 import com.mtrpsdlcd.block.entity.MyPSDTopLcd18BE;
 import com.mtrpsdlcd.registry.Items;
-import org.mtr.mapping.holder.ActionResult;
-import org.mtr.mapping.holder.BlockHitResult;
-import org.mtr.mapping.holder.BlockPos;
-import org.mtr.mapping.holder.BlockState;
-import org.mtr.mapping.holder.Direction;
-import org.mtr.mapping.holder.Hand;
-import org.mtr.mapping.holder.Item;
-import org.mtr.mapping.holder.PlayerEntity;
-import org.mtr.mapping.holder.Property;
-import org.mtr.mapping.holder.World;
-import org.mtr.mapping.mapper.BlockEntityExtension;
-import org.mtr.mod.block.BlockPSDTop;
-import org.mtr.mod.block.IBlock;
-
 import javax.annotation.Nonnull;
+import mtr.block.BlockPSDTop;
+import mtr.block.IBlock;
+import mtr.block.BlockPSDTop.EnumPersistent;
+import mtr.block.IBlock.EnumSide;
+import mtr.mappings.BlockEntityMapper;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 
 public class MyPSDTopLcd18 extends MyPSDTopLcd14 {
-	@Override
-	@Nonnull
-	public Item asItem2() {
-		return Items.PSD_TOP_LCD18.get();
-	}
+   public MyPSDTopLcd18() {
+   }
 
-	@Override
-	@Nonnull
-	public BlockEntityExtension createBlockEntity(BlockPos blockPos, BlockState blockState) {
-		return new MyPSDTopLcd18BE(blockPos, blockState);
-	}
+   @Nonnull
+   public Item asItem() {
+      return (Item)Items.PSD_TOP_LCD18.get();
+   }
 
-	@Override
-	public void onBreak2(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-		super.onBreak2(world, pos, state, player);
-		final Direction facing = IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
-		recomputeSideAfterBreak(world, pos, facing);
-	}
+   @Nonnull
+   public BlockEntityMapper createBlockEntity(BlockPos blockPos, BlockState blockState) {
+      return new MyPSDTopLcd18BE(blockPos, blockState);
+   }
 
-	@Override
-	@Nonnull
-	public ActionResult onUse2(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult blockHitResult) {
-		return IBlock.checkHoldingBrush(world, player, () -> {
-			final org.mtr.mapping.holder.BlockEntity be = world.getBlockEntity(pos);
-			if (be != null && be.data instanceof MyPSDTopLcd18BE) {
-				final MyPSDTopLcd18BE lcd18be = (MyPSDTopLcd18BE) be.data;
-				final BlockPSDTop.EnumPersistent current = IBlock.getStatePropertySafe(state, BlockPSDTop.PERSISTENT);
-				final int newIndex;
-				if (current == BlockPSDTop.EnumPersistent.NONE) {
-					world.setBlockState(pos, state.with(new Property<>(BlockPSDTop.PERSISTENT.data), BlockPSDTop.EnumPersistent.ROUTE));
-					newIndex = 0;
-				} else {
+   public void playerWillDestroy(Level world, BlockPos pos, BlockState state, Player player) {
+      super.playerWillDestroy(world, pos, state, player);
+      Direction facing = (Direction)IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
+      recomputeSideAfterBreak(world, pos, facing);
+   }
 
-					newIndex = lcd18be.getRouteIndex();
-					final boolean flipped = !PSDCustomText.readDirectionFlip(world, pos);
-					PSDCustomText.applyDirectionFlip(world, pos, flipped);
-					if (com.mtrpsdlcd.Constants.DEBUG_LOG) org.mtr.mod.Init.LOGGER.info("[LCD18] onUse2 翻转显示方向 pos={} → flip={}", pos, flipped);
-				}
-				lcd18be.setRouteIndex(newIndex);
-				final Direction facing = IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
-				propagateRouteIndex(world, pos, facing.rotateYClockwise(), newIndex);
-				propagateRouteIndex(world, pos, facing.rotateYCounterclockwise(), newIndex);
-				propagatePersistent(world, pos, facing.rotateYClockwise(), BlockPSDTop.EnumPersistent.ROUTE);
-				propagatePersistent(world, pos, facing.rotateYCounterclockwise(), BlockPSDTop.EnumPersistent.ROUTE);
-			}
-		});
-	}
+   @Nonnull
+   public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult blockHitResult) {
+      return IBlock.checkHoldingBrush(world, player, () -> {
+         BlockEntity be = world.getBlockEntity(pos);
+         if (be instanceof MyPSDTopLcd18BE lcd18be) {
+            BlockPSDTop.EnumPersistent current = (BlockPSDTop.EnumPersistent)IBlock.getStatePropertySafe(state, BlockPSDTop.PERSISTENT);
+            int newIndex;
+            if (current == EnumPersistent.NONE) {
+               world.setBlockAndUpdate(pos, (BlockState)state.setValue(BlockPSDTop.PERSISTENT, EnumPersistent.ROUTE));
+               newIndex = 0;
+            } else {
+               newIndex = lcd18be.getRouteIndex();
+               boolean flipped = !PSDCustomText.readDirectionFlip(world, pos);
+               PSDCustomText.applyDirectionFlip(world, pos, flipped);
+            }
 
-	private void propagateRouteIndex(World world, BlockPos pos, Direction dir, int index) {
-		for (int i = 1; ; i++) {
-			final BlockPos nextPos = pos.offset(dir, i);
-			final BlockState neighbor = world.getBlockState(nextPos);
-			if (!(neighbor.getBlock().data instanceof MyPSDTopLcd14)) {
-				break;
-			}
-			final org.mtr.mapping.holder.BlockEntity be = world.getBlockEntity(nextPos);
-			if (be != null && be.data instanceof com.mtrpsdlcd.block.entity.MyPSDTopLcd14BE) {
-				((com.mtrpsdlcd.block.entity.MyPSDTopLcd14BE) be.data).setRouteIndex(index);
-			}
-		}
-	}
+            lcd18be.setRouteIndex(newIndex);
+            Direction facing = (Direction)IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
+            this.propagateRouteIndex(world, pos, facing.getClockWise(), newIndex);
+            this.propagateRouteIndex(world, pos, facing.getCounterClockWise(), newIndex);
+            this.propagatePersistent(world, pos, facing.getClockWise(), EnumPersistent.ROUTE);
+            this.propagatePersistent(world, pos, facing.getCounterClockWise(), EnumPersistent.ROUTE);
+         }
 
-	private void propagatePersistent(World world, BlockPos pos, Direction dir, BlockPSDTop.EnumPersistent value) {
-		for (int i = 1; ; i++) {
-			final BlockPos nextPos = pos.offset(dir, i);
-			final BlockState neighbor = world.getBlockState(nextPos);
-			if (!(neighbor.getBlock().data instanceof MyPSDTopLcd14)) {
-				break;
-			}
-			world.setBlockState(nextPos, neighbor.with(new Property<>(BlockPSDTop.PERSISTENT.data), value));
-		}
-	}
+      });
+   }
 
-	public static void recomputeSide(World world, BlockPos pos, Direction facing) {
-		recomputeSideRun(world, pos, facing, null);
-	}
+   private void propagateRouteIndex(Level world, BlockPos pos, Direction dir, int index) {
+      int i = 1;
 
-	public static void recomputeSideAfterBreak(World world, BlockPos brokenPos, Direction facing) {
-		recomputeSideRun(world, brokenPos, facing, brokenPos);
-	}
+      while(true) {
+         BlockPos nextPos = pos.relative(dir, i);
+         BlockState neighbor = world.getBlockState(nextPos);
+         if (!(neighbor.getBlock() instanceof MyPSDTopLcd14)) {
+            return;
+         }
 
-	private static void recomputeSideRun(World world, BlockPos anchor, Direction facing, BlockPos excluded) {
+         BlockEntity be = world.getBlockEntity(nextPos);
+         if (be instanceof MyPSDTopLcd14BE) {
+            ((MyPSDTopLcd14BE)be).setRouteIndex(index);
+         }
 
-		for (BlockPos p = anchor.offset(facing.rotateYCounterclockwise()); ; p = p.offset(facing.rotateYCounterclockwise())) {
-			if (!(world.getBlockState(p).getBlock().data instanceof MyPSDTopLcd14)) {
-				break;
-			}
-			recalcGlassSide(world, p, facing, excluded);
-		}
+         ++i;
+      }
+   }
 
-		for (BlockPos p = anchor.offset(facing.rotateYClockwise()); ; p = p.offset(facing.rotateYClockwise())) {
-			if (!(world.getBlockState(p).getBlock().data instanceof MyPSDTopLcd14)) {
-				break;
-			}
-			recalcGlassSide(world, p, facing, excluded);
-		}
+   private void propagatePersistent(Level world, BlockPos pos, Direction dir, BlockPSDTop.EnumPersistent value) {
+      int i = 1;
 
-		if (!anchor.equals(excluded)) {
-			recalcGlassSide(world, anchor, facing, excluded);
-		}
-	}
+      while(true) {
+         BlockPos nextPos = pos.relative(dir, i);
+         BlockState neighbor = world.getBlockState(nextPos);
+         if (!(neighbor.getBlock() instanceof MyPSDTopLcd14)) {
+            return;
+         }
 
-	private static void recalcGlassSide(World world, BlockPos pos, Direction facing, BlockPos excluded) {
-		final BlockState state = world.getBlockState(pos);
-		if (!(state.getBlock().data instanceof MyPSDTopLcd14)) {
-			return;
-		}
+         world.setBlockAndUpdate(nextPos, (BlockState)neighbor.setValue(BlockPSDTop.PERSISTENT, value));
+         ++i;
+      }
+   }
 
-		final BlockState leftState = world.getBlockState(pos.offset(facing.rotateYCounterclockwise()));
-		final boolean hasLeft = !pos.offset(facing.rotateYCounterclockwise()).equals(excluded) && leftState.getBlock().data instanceof MyPSDTopLcd14;
+   public static void recomputeSide(Level world, BlockPos pos, Direction facing) {
+      recomputeSideRun(world, pos, facing, (BlockPos)null);
+   }
 
-		final BlockState rightState = world.getBlockState(pos.offset(facing.rotateYClockwise()));
-		final boolean hasRight = !pos.offset(facing.rotateYClockwise()).equals(excluded) && rightState.getBlock().data instanceof MyPSDTopLcd14;
-		final IBlock.EnumSide ownSide = hasLeft && hasRight ? IBlock.EnumSide.MIDDLE : (hasLeft ? IBlock.EnumSide.RIGHT : (hasRight ? IBlock.EnumSide.LEFT : IBlock.EnumSide.SINGLE));
-		world.setBlockState(pos, state.with(new Property<>(IBlock.SIDE_EXTENDED.data), ownSide));
-	}
+   public static void recomputeSideAfterBreak(Level world, BlockPos brokenPos, Direction facing) {
+      recomputeSideRun(world, brokenPos, facing, brokenPos);
+   }
+
+   private static void recomputeSideRun(Level world, BlockPos anchor, Direction facing, BlockPos excluded) {
+      for(BlockPos p = anchor.relative(facing.getCounterClockWise()); world.getBlockState(p).getBlock() instanceof MyPSDTopLcd14; p = p.relative(facing.getCounterClockWise())) {
+         recalcGlassSide(world, p, facing, excluded);
+      }
+
+      for(BlockPos p = anchor.relative(facing.getClockWise()); world.getBlockState(p).getBlock() instanceof MyPSDTopLcd14; p = p.relative(facing.getClockWise())) {
+         recalcGlassSide(world, p, facing, excluded);
+      }
+
+      if (!anchor.equals(excluded)) {
+         recalcGlassSide(world, anchor, facing, excluded);
+      }
+
+   }
+
+   private static void recalcGlassSide(Level world, BlockPos pos, Direction facing, BlockPos excluded) {
+      BlockState state = world.getBlockState(pos);
+      if (state.getBlock() instanceof MyPSDTopLcd14) {
+         BlockState leftState = world.getBlockState(pos.relative(facing.getCounterClockWise()));
+         boolean hasLeft = !pos.relative(facing.getCounterClockWise()).equals(excluded) && leftState.getBlock() instanceof MyPSDTopLcd14;
+         BlockState rightState = world.getBlockState(pos.relative(facing.getClockWise()));
+         boolean hasRight = !pos.relative(facing.getClockWise()).equals(excluded) && rightState.getBlock() instanceof MyPSDTopLcd14;
+         IBlock.EnumSide ownSide = hasLeft && hasRight ? EnumSide.MIDDLE : (hasLeft ? EnumSide.RIGHT : (hasRight ? EnumSide.LEFT : EnumSide.SINGLE));
+         world.setBlockAndUpdate(pos, (BlockState)state.setValue(IBlock.SIDE_EXTENDED, ownSide));
+      }
+   }
 }

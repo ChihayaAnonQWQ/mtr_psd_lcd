@@ -1,17 +1,17 @@
 package com.mtrpsdlcd.block.entity;
 
 import com.mtrpsdlcd.registry.BlockEntities;
-import org.mtr.mapping.holder.BlockEntityType;
-import org.mtr.mapping.holder.BlockPos;
-import org.mtr.mapping.holder.BlockState;
-import org.mtr.mod.block.BlockPSDAPGDoorBase;
+import mtr.block.BlockPSDAPGDoorBase;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
 
-public class MyPSDDoorLcd4BE extends BlockPSDAPGDoorBase.BlockEntityBase {
-	public MyPSDDoorLcd4BE(BlockPos pos, BlockState state) {
-		this(BlockEntities.PSD_DOOR_LCD4.get(), pos, state);
-	}
+public class MyPSDDoorLcd4BE extends BlockPSDAPGDoorBase.TileEntityPSDAPGDoorBase {
+   public MyPSDDoorLcd4BE(BlockPos pos, BlockState state) {
+      this((BlockEntityType)BlockEntities.PSD_DOOR_LCD4.get(), pos, state);
+   }
 
-	public MyPSDDoorLcd4BE(BlockEntityType<?> type, BlockPos pos, BlockState state) {
-		super(type, pos, state);
-	}
+   public MyPSDDoorLcd4BE(net.minecraft.world.level.block.entity.BlockEntityType<?> type, net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
+      super(type, pos, state);
+   }
 }

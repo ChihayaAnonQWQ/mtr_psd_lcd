@@ -1,32 +1,27 @@
 package com.mtrpsdlcd.item;
 
 import com.mtrpsdlcd.block.PSDCustomText;
-import org.mtr.mapping.holder.ActionResult;
-import org.mtr.mapping.holder.BlockPos;
-import org.mtr.mapping.holder.ItemSettings;
-import org.mtr.mapping.holder.ItemUsageContext;
-import org.mtr.mapping.holder.World;
-import org.mtr.mapping.mapper.ItemExtension;
+import com.mtrpsdlcd.client.CustomTextScreenOpener;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.context.UseOnContext;
 
-import javax.annotation.Nonnull;
+public class MyPSDTool extends Item {
+   public MyPSDTool(Item.Properties settings) {
+      super(settings);
+   }
 
-public class MyPSDTool extends ItemExtension {
-	public MyPSDTool(ItemSettings itemSettings) {
-		super(itemSettings);
-	}
+   public InteractionResult useOn(UseOnContext context) {
+      BlockPos topPos = PSDCustomText.resolveTopPos(context.getLevel(), context.getClickedPos());
+      if (topPos == null) {
+         return InteractionResult.PASS;
+      } else {
+         if (context.getLevel().isClientSide()) {
+            CustomTextScreenOpener.open(topPos, PSDCustomText.read(context.getLevel(), topPos), PSDCustomText.readImage(context.getLevel(), topPos));
+         }
 
-	@Override
-	@Nonnull
-	public ActionResult useOnBlock2(ItemUsageContext context) {
-		final World world = context.getWorld();
-		final BlockPos topPos = PSDCustomText.resolveTopPos(world, context.getBlockPos());
-		if (topPos == null) {
-			return ActionResult.PASS;
-		}
-		if (world.isClient()) {
-
-			com.mtrpsdlcd.client.CustomTextScreenOpener.open(topPos, PSDCustomText.read(world, topPos), PSDCustomText.readImage(world, topPos));
-		}
-		return ActionResult.SUCCESS;
-	}
+         return InteractionResult.SUCCESS;
+      }
+   }
 }

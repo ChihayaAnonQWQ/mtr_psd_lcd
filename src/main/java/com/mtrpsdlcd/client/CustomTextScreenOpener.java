@@ -1,13 +1,13 @@
 package com.mtrpsdlcd.client;
 
-import net.minecraft.client.MinecraftClient;
-import org.mtr.mapping.holder.BlockPos;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 
 public final class CustomTextScreenOpener {
-	private CustomTextScreenOpener() {
-	}
+   private CustomTextScreenOpener() {
+   }
 
-	public static void open(BlockPos topPos, String currentText, String currentImagePath) {
-		MinecraftClient.getInstance().setScreen(new CustomTextScreen(topPos, currentText, currentImagePath));
-	}
+   public static void open(BlockPos topPos, String currentText, String currentImagePath) {
+      Minecraft.getInstance().setScreen(new CustomTextScreen(topPos, currentText, currentImagePath));
+   }
 }

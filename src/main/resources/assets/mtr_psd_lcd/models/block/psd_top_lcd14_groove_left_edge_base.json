@@ -1,7 +1,8 @@
 {
   "parent": "block/block",
   "textures": {
-    "particle": "mtr:block/psd_top"
+    "particle": "mtr:block/psd_top",
+    "front": "mtr_psd_lcd:block/psd_top_clean"
   },
   "elements": [
     {
@@ -33,14 +34,14 @@
             16,
             15
           ],
-          "texture": "#particle"
+          "texture": "#front"
         },
         "west": {
           "uv": [
             16,
-            0,
-            0,
-            15
+            15,
+            0.5,
+            16
           ],
           "texture": "#particle",
           "cullface": "west"
@@ -83,14 +84,14 @@
             16,
             15
           ],
-          "texture": "#particle"
+          "texture": "#front"
         },
         "west": {
           "uv": [
             16,
-            0,
-            0,
-            15
+            15,
+            0.5,
+            16
           ],
           "texture": "#particle",
           "cullface": "west"
@@ -121,8 +122,8 @@
           "uv": [
             16,
             0,
-            0,
-            15
+            0.5,
+            14.93
           ],
           "texture": "#particle",
           "cullface": "west"
@@ -148,14 +149,14 @@
             16,
             15
           ],
-          "texture": "#particle"
+          "texture": "#front"
         },
         "west": {
           "uv": [
             16,
             0,
-            0,
-            15
+            0.5,
+            14.93
           ],
           "texture": "#particle",
           "cullface": "west"
@@ -183,7 +184,7 @@
       ],
       "faces": {
         "east": {
-          "texture": "#particle"
+          "texture": "#front"
         }
       }
     },
@@ -200,7 +201,7 @@
       ],
       "faces": {
         "east": {
-          "texture": "#particle"
+          "texture": "#front"
         },
         "down": {
           "texture": "#particle"
@@ -220,7 +221,7 @@
       ],
       "faces": {
         "east": {
-          "texture": "#particle"
+          "texture": "#front"
         },
         "up": {
           "texture": "#particle"
@@ -252,7 +253,7 @@
           "uv": [
             16,
             15,
-            0,
+            0.5,
             16
           ],
           "texture": "#particle",
@@ -336,7 +337,7 @@
             16,
             15.5
           ],
-          "texture": "#particle"
+          "texture": "#front"
         },
         "north": {
           "texture": "#particle",

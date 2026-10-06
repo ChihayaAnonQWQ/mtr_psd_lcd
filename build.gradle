@@ -1,53 +1,77 @@
 plugins {
-    id 'fabric-loom' version '1.5.8'
-    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '6.0.54'
+    // This mod ships no mixins of its own, but MixinGradle is what makes the
+    // dev runs remap the SRG refmaps of our runtime dependencies (Architectury,
+    // which MTR 3 requires); without it Architectury's mixins fail to apply.
+    id 'org.spongepowered.mixin' version '0.7-SNAPSHOT'
 }
 
 version = project.mod_version
 group = project.maven_group
+base.archivesName = project.archives_base_name + '-forge-mc' + project.minecraft_version + '-mtr3'
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+minecraft {
+    mappings channel: 'official', version: project.minecraft_version
+    runs {
+        client {
+            workingDirectory project.file('run')
+            property 'mtrpsdlcd.debug', 'true'
+            if (project.hasProperty('mtrDumpMaps')) property 'mtrpsdlcd.dumpmaps', project.property('mtrDumpMaps')
+            if (project.hasProperty('quickPlayWorld')) args '--quickPlaySingleplayer', project.property('quickPlayWorld')
+            mods { mtrpsdlcd { source sourceSets.main } }
+        }
+        server {
+            workingDirectory project.file('run-server')
+            args 'nogui'
+            property 'mtrpsdlcd.debug', 'true'
+            mods { mtrpsdlcd { source sourceSets.main } }
+        }
+    }
+}
 
 repositories {
     mavenCentral()
+    maven { url = 'https://api.modrinth.com/maven' }
+    maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-
-    // MTR (Minecraft Transit Railway) — compile only, remapped by loom
-
-    modCompileOnly files("libs/mtr-${project.mtr_version}-loom158.jar")
-
-    compileOnly "com.google.code.findbugs:jsr305:3.0.2"
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    // MTR 3 for Forge 1.20.1. The jar is SRG-named, so it must be deobfuscated
+    // before our official-mapped sources can compile against it.
+    compileOnly fg.deobf("maven.modrinth:minecraft-transit-railway:${mtr_modrinth_version}")
+    // MTR 3's mapping layer exposes Architectury types (NetworkReceiver), and
+    // MTR's own mods.toml declares Architectury as a mandatory runtime dependency.
+    compileOnly fg.deobf("maven.modrinth:architectury-api:${architectury_version}")
 }
 
-processResources {
-    inputs.property "version", project.version
-
-    filesMatching("fabric.mod.json") {
-        expand "version": project.version
+// Opt-in runtime dependencies for an isolated local smoke test.
+if (project.hasProperty('mtrRuntimeTest')) {
+    dependencies {
+        // -PmtrRuntimeCoordinate=... runs the smoke test against another MTR 3 build
+        // (e.g. the Yomi 3.6.x fork the reference pack ships).
+        runtimeOnly fg.deobf(project.findProperty('mtrRuntimeCoordinate')
+                ?: "maven.modrinth:minecraft-transit-railway:${mtr_modrinth_version}")
+        // MTR 3 declares Architectury as a mandatory dependency in its own mods.toml.
+        runtimeOnly fg.deobf("maven.modrinth:architectury-api:${architectury_version}")
     }
 }
 
 tasks.withType(JavaCompile).configureEach {
-    it.options.release = 17
+    options.encoding = 'UTF-8'
 }
 
-java {
-    withSourcesJar()
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+processResources {
+    inputs.properties(version: project.version, minecraft_version: project.minecraft_version,
+            mtr_version: project.mtr_version, forge_version: project.forge_version)
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand version: project.version, minecraft_version: project.minecraft_version,
+                mtr_version: project.mtr_version, forge_version: project.forge_version
+    }
 }
 
 jar {
-    from("LICENSE") {
-        rename { "${it}_${project.archives_base_name}" }
-    }
-
-    if (!project.hasProperty('withFont')) {
-        exclude 'assets/mtr_psd_lcd/font/**'
-    }
+    finalizedBy 'reobfJar'
 }

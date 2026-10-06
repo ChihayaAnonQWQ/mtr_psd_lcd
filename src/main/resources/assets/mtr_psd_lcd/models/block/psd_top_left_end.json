@@ -1,0 +1,89 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "main": "mtr:block/psd_top",
+    "light": "mtr:block/light_off",
+    "front": "mtr_psd_lcd:block/psd_top_clean",
+    "particle": "mtr:block/psd_top"
+  },
+  "elements": [
+    {
+      "__comment": "Main body",
+      "from": [
+        10,
+        0,
+        16
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ],
+      "faces": {
+        "south": {
+          "texture": "#particle"
+        }
+      }
+    },
+    {
+      "__comment": "Light",
+      "from": [
+        16,
+        0,
+        8
+      ],
+      "to": [
+        17,
+        1,
+        10
+      ],
+      "rotation": {
+        "origin": [
+          16,
+          0,
+          16
+        ],
+        "axis": "y",
+        "angle": 45
+      },
+      "faces": {
+        "down": {
+          "uv": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "texture": "#particle"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "texture": "#front"
+        },
+        "north": {
+          "uv": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "texture": "#particle"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            1,
+            1
+          ],
+          "texture": "#particle"
+        }
+      }
+    }
+  ]
+}

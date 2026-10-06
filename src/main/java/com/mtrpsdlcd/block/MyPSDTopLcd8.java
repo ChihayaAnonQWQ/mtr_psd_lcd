@@ -2,23 +2,23 @@ package com.mtrpsdlcd.block;
 
 import com.mtrpsdlcd.block.entity.MyPSDTopLcd8BE;
 import com.mtrpsdlcd.registry.Items;
-import org.mtr.mapping.holder.BlockPos;
-import org.mtr.mapping.holder.BlockState;
-import org.mtr.mapping.holder.Item;
-import org.mtr.mapping.mapper.BlockEntityExtension;
-
 import javax.annotation.Nonnull;
+import mtr.mappings.BlockEntityMapper;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class MyPSDTopLcd8 extends MyPSDTop implements IStandaloneTopModule {
-	@Override
-	@Nonnull
-	public Item asItem2() {
-		return Items.PSD_TOP_LCD8.get();
-	}
+   public MyPSDTopLcd8() {
+   }
 
-	@Override
-	@Nonnull
-	public BlockEntityExtension createBlockEntity(BlockPos blockPos, BlockState blockState) {
-		return new MyPSDTopLcd8BE(blockPos, blockState);
-	}
+   @Nonnull
+   public Item asItem() {
+      return (Item)Items.PSD_TOP_LCD8.get();
+   }
+
+   @Nonnull
+   public BlockEntityMapper createBlockEntity(BlockPos blockPos, BlockState blockState) {
+      return new MyPSDTopLcd8BE(blockPos, blockState);
+   }
 }

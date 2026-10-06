@@ -1,52 +1,90 @@
 package com.mtrpsdlcd.packet;
 
-import com.mtrpsdlcd.block.PSDCustomText;
-import org.mtr.mapping.holder.BlockPos;
-import org.mtr.mapping.holder.MinecraftServer;
-import org.mtr.mapping.holder.ServerPlayerEntity;
-import org.mtr.mapping.holder.World;
-import org.mtr.mapping.registry.PacketHandler;
-import org.mtr.mapping.tool.PacketBufferReceiver;
-import org.mtr.mapping.tool.PacketBufferSender;
+import com.mtrpsdlcd.Constants;
+import io.netty.buffer.Unpooled;
+import java.util.ArrayList;
+import java.util.List;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
 
-public final class PacketCustomText extends PacketHandler {
-	private final int x;
-	private final int y;
-	private final int z;
-	private final String text;
-	private final String imagePath;
+public final class PacketCustomText {
+   public static final ResourceLocation CHANNEL = Constants.id("custom_text");
+   private final String text;
+   private final String imageName;
+   private final int totalBytes;
+   private final int chunkIndex;
+   private final int chunkCount;
+   private final byte[] payload;
 
-	public PacketCustomText(PacketBufferReceiver receiver) {
-		this(receiver.readInt(), receiver.readInt(), receiver.readInt(), receiver.readString(), receiver.readString());
-	}
+   public PacketCustomText(String text, String imageName, int totalBytes, int chunkIndex, int chunkCount, byte[] payload) {
+      this.text = text == null ? "" : text;
+      this.imageName = imageName == null ? "" : imageName;
+      this.totalBytes = Math.max(0, totalBytes);
+      this.chunkIndex = Math.max(0, chunkIndex);
+      this.chunkCount = Math.max(1, chunkCount);
+      this.payload = payload == null ? new byte[0] : payload;
+   }
 
-	public PacketCustomText(BlockPos pos, String text, String imagePath) {
-		this(pos.getX(), pos.getY(), pos.getZ(), text, imagePath);
-	}
+   public PacketCustomText(FriendlyByteBuf buf) {
+      this(buf.readUtf(), buf.readUtf(), buf.readInt(), buf.readInt(), buf.readInt(), buf.readByteArray());
+   }
 
-	private PacketCustomText(int x, int y, int z, String text, String imagePath) {
-		this.x = x;
-		this.y = y;
-		this.z = z;
-		this.text = text == null ? "" : text;
-		this.imagePath = imagePath == null ? "" : imagePath;
-	}
+   public void write(FriendlyByteBuf buf) {
+      buf.writeUtf(this.text);
+      buf.writeUtf(this.imageName);
+      buf.writeInt(this.totalBytes);
+      buf.writeInt(this.chunkIndex);
+      buf.writeInt(this.chunkCount);
+      buf.writeByteArray(this.payload);
+   }
 
-	@Override
-	public void write(PacketBufferSender sender) {
-		sender.writeInt(x);
-		sender.writeInt(y);
-		sender.writeInt(z);
-		sender.writeString(text);
-		sender.writeString(imagePath);
-	}
+   public FriendlyByteBuf toBuf() {
+      FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+      this.write(buf);
+      return buf;
+   }
 
-	@Override
-	public void runServer(MinecraftServer server, ServerPlayerEntity player) {
-		final World world = World.cast(player.getServerWorld());
-		final BlockPos topPos = new BlockPos(x, y, z);
-		PSDCustomText.apply(world, topPos, text, imagePath);
+   public String getText() {
+      return this.text;
+   }
 
-		com.mtrpsdlcd.registry.ModRegistry.sendPacketToClient(player, new PacketCustomText(topPos, text, imagePath));
-	}
+   public String getImageName() {
+      return this.imageName;
+   }
+
+   public int getTotalBytes() {
+      return this.totalBytes;
+   }
+
+   public int getChunkIndex() {
+      return this.chunkIndex;
+   }
+
+   public int getChunkCount() {
+      return this.chunkCount;
+   }
+
+   public byte[] getPayload() {
+      return this.payload;
+   }
+
+   public static List<PacketCustomText> split(String text, String imageName, byte[] bytes) {
+      byte[] data = bytes == null ? new byte[0] : bytes;
+      int chunkBytes = 24576;
+      int count = Math.max(1, (data.length + 24576 - 1) / 24576);
+      List<PacketCustomText> packets = new ArrayList(count);
+
+      for(int index = 0; index < count; ++index) {
+         int from = index * 24576;
+         int to = Math.min(data.length, from + 24576);
+         byte[] slice = new byte[Math.max(0, to - from)];
+         if (slice.length > 0) {
+            System.arraycopy(data, from, slice, 0, slice.length);
+         }
+
+         packets.add(new PacketCustomText(text, imageName, data.length, index, count, slice));
+      }
+
+      return packets;
+   }
 }

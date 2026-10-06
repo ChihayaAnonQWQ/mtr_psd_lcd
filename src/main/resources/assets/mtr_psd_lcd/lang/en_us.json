@@ -1,5 +1,12 @@
 {
   "itemGroup.mtr_psd_lcd.main": "Platform Screen Doors (LCD)",
+  "block.mtr_psd_lcd.psd_glass": "High Platform Glass 1 (Vanilla PSD Glass)",
+  "block.mtr_psd_lcd.psd_glass_2": "High Platform Glass 2 (Vanilla PSD Glass)",
+  "block.mtr_psd_lcd.psd_door": "High Platform Door 1 (LCD v1)",
+  "block.mtr_psd_lcd.psd_door_2": "High Platform Door 2 (LCD v1)",
+  "block.mtr_psd_lcd.psd_top": "Top Info Module (Vanilla) 1",
+  "item.mtr_psd_lcd.psd_pillar": "Platform Screen Door Pillar (Single)",
+  "item.mtr_psd_lcd.psd_top": "Top Info Module (Vanilla) 1",
   "item.mtr_psd_lcd.psd_door": "High Platform Door 1 (LCD v1)",
   "item.mtr_psd_lcd.psd_glass": "High Platform Glass 1 (Vanilla PSD Glass)",
   "item.mtr_psd_lcd.psd_door_2": "High Platform Door 2 (LCD v1)",

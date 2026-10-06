@@ -1,12 +1,9 @@
 package com.mtrpsdlcd.block.entity;
 
-import org.mtr.mapping.holder.BlockEntityType;
-import org.mtr.mapping.holder.BlockPos;
-import org.mtr.mapping.holder.BlockState;
-import org.mtr.mod.block.BlockPSDAPGDoorBase;
+import mtr.block.BlockPSDAPGDoorBase;
 
-public class MyPSDDoorBE extends BlockPSDAPGDoorBase.BlockEntityBase {
-	public MyPSDDoorBE(BlockEntityType<?> type, BlockPos pos, BlockState state) {
-		super(type, pos, state);
-	}
+public class MyPSDDoorBE extends BlockPSDAPGDoorBase.TileEntityPSDAPGDoorBase {
+   public MyPSDDoorBE(net.minecraft.world.level.block.entity.BlockEntityType<?> type, net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
+      super(type, pos, state);
+   }
 }

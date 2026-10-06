@@ -1,68 +1,61 @@
 package com.mtrpsdlcd.item;
 
-import org.mtr.mapping.holder.ActionResult;
-import org.mtr.mapping.holder.BlockPos;
-import org.mtr.mapping.holder.Block;
 import com.mtrpsdlcd.block.MyPSDTopLcd14;
 import com.mtrpsdlcd.block.MyPSDTopLcd18;
-import org.mtr.mapping.holder.BlockState;
-import org.mtr.mapping.holder.Direction;
-import org.mtr.mapping.holder.ItemSettings;
-import org.mtr.mapping.holder.ItemUsageContext;
-import org.mtr.mapping.holder.Property;
-import org.mtr.mapping.holder.World;
-import org.mtr.mapping.holder.WorldAccess;
-import org.mtr.mapping.mapper.DirectionHelper;
-import org.mtr.mapping.mapper.ItemExtension;
-import org.mtr.mapping.registry.BlockRegistryObject;
-import org.mtr.mod.block.BlockPSDTop;
-import org.mtr.mod.block.IBlock;
-
+import java.util.function.Supplier;
 import javax.annotation.Nonnull;
+import mtr.block.BlockPSDTop;
+import mtr.block.IBlock;
+import mtr.block.IBlock.EnumSide;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.state.BlockState;
 
-public class ItemPSDTopModule extends ItemExtension implements IBlock {
+public class ItemPSDTopModule extends Item implements IBlock {
+   private final Supplier<net.minecraft.world.level.block.Block> moduleBlock;
+   private final boolean doubleWidth;
 
-	private final BlockRegistryObject moduleBlock;
-	private final boolean doubleWidth;
+   public ItemPSDTopModule(Supplier<net.minecraft.world.level.block.Block> moduleBlock, boolean doubleWidth, net.minecraft.world.item.Item.Properties itemSettings) {
+      super(itemSettings);
+      this.moduleBlock = moduleBlock;
+      this.doubleWidth = doubleWidth;
+   }
 
-	public ItemPSDTopModule(BlockRegistryObject moduleBlock, boolean doubleWidth, ItemSettings itemSettings) {
-		super(itemSettings);
-		this.moduleBlock = moduleBlock;
-		this.doubleWidth = doubleWidth;
-	}
+   @Nonnull
+   public InteractionResult useOn(UseOnContext context) {
+      int horizontal = this.doubleWidth ? 2 : 1;
+      Level world = context.getLevel();
+      Direction facing = context.getHorizontalDirection();
+      BlockPos basePos = context.getClickedPos().relative(context.getClickedFace());
 
-	@Override
-	@Nonnull
-	public ActionResult useOnBlock2(ItemUsageContext context) {
-		final int horizontal = doubleWidth ? 2 : 1;
-		final World world = context.getWorld();
-		final Direction facing = context.getPlayerFacing();
-		final BlockPos basePos = context.getBlockPos().offset(context.getSide());
+      for(int i = 0; i < horizontal; ++i) {
+         BlockPos checkPos = basePos.relative(facing.getClockWise(), i);
+         if (!world.getBlockState(checkPos).getBlock().equals(Blocks.AIR)) {
+            return InteractionResult.FAIL;
+         }
+      }
 
-		for (int i = 0; i < horizontal; ++i) {
-			final BlockPos checkPos = basePos.offset(facing.rotateYClockwise(), i);
-			if (!world.getBlockState(checkPos).getBlock().equals(org.mtr.mapping.holder.Blocks.getAirMapped())) {
-				return ActionResult.FAIL;
-			}
-		}
+      for(int i = 0; i < horizontal; ++i) {
+         BlockPos newPos = basePos.relative(facing.getClockWise(), i);
+         IBlock.EnumSide side = this.doubleWidth ? (i == 0 ? EnumSide.LEFT : EnumSide.RIGHT) : EnumSide.SINGLE;
+         BlockState state = (BlockState)((BlockState)((Block)this.moduleBlock.get()).defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, facing)).setValue(IBlock.SIDE_EXTENDED, side);
+         world.setBlockAndUpdate(newPos, state);
+         world.setBlockAndUpdate(newPos, BlockPSDTop.getActualState(world, newPos));
+      }
 
-		for (int i = 0; i < horizontal; ++i) {
-			final BlockPos newPos = basePos.offset(facing.rotateYClockwise(), i);
-			final IBlock.EnumSide side = doubleWidth ? (i == 0 ? IBlock.EnumSide.LEFT : IBlock.EnumSide.RIGHT) : IBlock.EnumSide.SINGLE;
-			BlockState state = moduleBlock.get().getDefaultState()
-					.with(new Property<>(DirectionHelper.FACING.data), facing.data)
-					.with(new Property<>(IBlock.SIDE_EXTENDED.data), side);
-			world.setBlockState(newPos, state);
+      Block placedBlock = world.getBlockState(basePos).getBlock();
+      if (placedBlock instanceof MyPSDTopLcd14) {
+         MyPSDTopLcd18.recomputeSide(world, basePos, facing);
+      }
 
-			world.setBlockState(newPos, BlockPSDTop.getActualState(WorldAccess.cast(world), newPos));
-		}
-
-		final Block placedBlock = world.getBlockState(basePos).getBlock();
-		if (placedBlock.data instanceof MyPSDTopLcd14) {
-			MyPSDTopLcd18.recomputeSide(world, basePos, facing);
-		}
-
-		context.getStack().decrement(1);
-		return ActionResult.SUCCESS;
-	}
+      context.getItemInHand().shrink(1);
+      return InteractionResult.SUCCESS;
+   }
 }

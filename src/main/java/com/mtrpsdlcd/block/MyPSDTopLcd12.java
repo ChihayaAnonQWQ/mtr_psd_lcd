@@ -2,90 +2,94 @@ package com.mtrpsdlcd.block;
 
 import com.mtrpsdlcd.block.entity.MyPSDTopLcd12BE;
 import com.mtrpsdlcd.registry.Items;
-import org.mtr.mapping.holder.ActionResult;
-import org.mtr.mapping.holder.Block;
-import org.mtr.mapping.holder.BlockHitResult;
-import org.mtr.mapping.holder.BlockPos;
-import org.mtr.mapping.holder.BlockState;
-import org.mtr.mapping.holder.BlockView;
-import org.mtr.mapping.holder.ShapeContext;
-import org.mtr.mapping.holder.VoxelShape;
-import org.mtr.mapping.holder.Direction;
-import org.mtr.mapping.holder.Hand;
-import org.mtr.mapping.holder.Item;
-import org.mtr.mapping.holder.PlayerEntity;
-import org.mtr.mapping.holder.Property;
-import org.mtr.mapping.holder.World;
-import org.mtr.mapping.mapper.BlockEntityExtension;
-import org.mtr.mod.block.BlockPSDTop;
-import org.mtr.mod.block.IBlock;
-
 import javax.annotation.Nonnull;
+import mtr.block.BlockPSDTop;
+import mtr.block.IBlock;
+import mtr.block.BlockPSDTop.EnumPersistent;
+import mtr.mappings.BlockEntityMapper;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class MyPSDTopLcd12 extends MyPSDTop implements IStandaloneTopModule {
-	@Override
-	@Nonnull
-	public Item asItem2() {
-		return Items.PSD_TOP_LCD12.get();
-	}
+   public MyPSDTopLcd12() {
+   }
 
-	@Override
-	@Nonnull
-	public BlockEntityExtension createBlockEntity(BlockPos blockPos, BlockState blockState) {
-		return new MyPSDTopLcd12BE(blockPos, blockState);
-	}
+   @Nonnull
+   public Item asItem() {
+      return (Item)Items.PSD_TOP_LCD12.get();
+   }
 
-	@Override
-	@Nonnull
-	public VoxelShape getOutlineShape2(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
+   @Nonnull
+   public BlockEntityMapper createBlockEntity(BlockPos blockPos, BlockState blockState) {
+      return new MyPSDTopLcd12BE(blockPos, blockState);
+   }
 
-		return IBlock.getVoxelShapeByDirection(0.0, 0.0, 0.0, 16.0, 16.0, 6.0, IBlock.getStatePropertySafe(state, BlockPSDTop.FACING));
-	}
+   @Nonnull
+   public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
+      return IBlock.getVoxelShapeByDirection(0.0D, 0.0D, 0.0D, 16.0D, 16.0D, 6.0D, (Direction)IBlock.getStatePropertySafe(state, BlockPSDTop.FACING));
+   }
 
-	@Override
-	@Nonnull
-	public ActionResult onUse2(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult blockHitResult) {
-		return IBlock.checkHoldingItem(world, player, item -> {
-			if (item.data instanceof org.mtr.mod.item.ItemBrush) {
-				final BlockPSDTop.EnumPersistent current = IBlock.getStatePropertySafe(state, BlockPSDTop.PERSISTENT);
-				final Direction facing = IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
-				if (current != BlockPSDTop.EnumPersistent.ROUTE) {
+   @Nonnull
+   public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult blockHitResult) {
+      return IBlock.checkHoldingItem(world, player, (item) -> {
+         if (item == mtr.Items.BRUSH.get()) {
+            BlockPSDTop.EnumPersistent current = (BlockPSDTop.EnumPersistent)IBlock.getStatePropertySafe(state, BlockPSDTop.PERSISTENT);
+            Direction facing = (Direction)IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
+            if (current != EnumPersistent.ROUTE) {
+               world.setBlockAndUpdate(pos, (BlockState)state.setValue(BlockPSDTop.PERSISTENT, EnumPersistent.ROUTE));
+               this.propagatePersistent(world, pos, facing.getClockWise(), EnumPersistent.ROUTE);
+               this.propagatePersistent(world, pos, facing.getCounterClockWise(), EnumPersistent.ROUTE);
+            } else {
+               int arrow = IBlock.getStatePropertySafe(state, BlockPSDTop.ARROW_DIRECTION);
+               int nextArrow = arrow == 2 ? 0 : 2;
+               world.setBlockAndUpdate(pos, (BlockState)state.setValue(BlockPSDTop.ARROW_DIRECTION, nextArrow));
+               this.propagateArrow(world, pos, facing.getClockWise(), nextArrow);
+               this.propagateArrow(world, pos, facing.getCounterClockWise(), nextArrow);
+            }
+         }
 
-					world.setBlockState(pos, state.with(new Property<>(BlockPSDTop.PERSISTENT.data), BlockPSDTop.EnumPersistent.ROUTE));
-					propagatePersistent(world, pos, facing.rotateYClockwise(), BlockPSDTop.EnumPersistent.ROUTE);
-					propagatePersistent(world, pos, facing.rotateYCounterclockwise(), BlockPSDTop.EnumPersistent.ROUTE);
-				} else {
+      }, (Runnable)null, new Item[]{(Item)mtr.Items.BRUSH.get(), net.minecraft.world.item.Items.SHEARS});
+   }
 
-					final int arrow = IBlock.getStatePropertySafe(state, BlockPSDTop.ARROW_DIRECTION);
-					final int nextArrow = arrow == 2 ? 0 : 2;
-					world.setBlockState(pos, state.with(new Property<>(BlockPSDTop.ARROW_DIRECTION.data), nextArrow));
-					propagateArrow(world, pos, facing.rotateYClockwise(), nextArrow);
-					propagateArrow(world, pos, facing.rotateYCounterclockwise(), nextArrow);
-				}
-			}
-		}, null, org.mtr.mod.Items.BRUSH.get(), org.mtr.mapping.holder.Items.getShearsMapped());
-	}
+   private void propagatePersistent(Level world, BlockPos pos, Direction dir, BlockPSDTop.EnumPersistent value) {
+      int i = 1;
 
-	private void propagatePersistent(World world, BlockPos pos, Direction dir, BlockPSDTop.EnumPersistent value) {
-		for (int i = 1; ; i++) {
-			final BlockPos nextPos = pos.offset(dir, i);
-			final BlockState neighbor = world.getBlockState(nextPos);
-			final Block neighborBlock = neighbor.getBlock();
-			if (!(neighborBlock.data instanceof MyPSDTopLcd12)) {
-				break;
-			}
-			world.setBlockState(nextPos, neighbor.with(new Property<>(BlockPSDTop.PERSISTENT.data), value));
-		}
-	}
+      while(true) {
+         BlockPos nextPos = pos.relative(dir, i);
+         BlockState neighbor = world.getBlockState(nextPos);
+         Block neighborBlock = neighbor.getBlock();
+         if (!(neighborBlock instanceof MyPSDTopLcd12)) {
+            return;
+         }
 
-	private void propagateArrow(World world, BlockPos pos, Direction dir, int value) {
-		for (int i = 1; ; i++) {
-			final BlockPos nextPos = pos.offset(dir, i);
-			final BlockState neighbor = world.getBlockState(nextPos);
-			if (!(neighbor.getBlock().data instanceof MyPSDTopLcd12)) {
-				break;
-			}
-			world.setBlockState(nextPos, neighbor.with(new Property<>(BlockPSDTop.ARROW_DIRECTION.data), value));
-		}
-	}
+         world.setBlockAndUpdate(nextPos, (BlockState)neighbor.setValue(BlockPSDTop.PERSISTENT, value));
+         ++i;
+      }
+   }
+
+   private void propagateArrow(Level world, BlockPos pos, Direction dir, int value) {
+      int i = 1;
+
+      while(true) {
+         BlockPos nextPos = pos.relative(dir, i);
+         BlockState neighbor = world.getBlockState(nextPos);
+         if (!(neighbor.getBlock() instanceof MyPSDTopLcd12)) {
+            return;
+         }
+
+         world.setBlockAndUpdate(nextPos, (BlockState)neighbor.setValue(BlockPSDTop.ARROW_DIRECTION, value));
+         ++i;
+      }
+   }
 }

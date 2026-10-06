@@ -2,23 +2,23 @@ package com.mtrpsdlcd.block;
 
 import com.mtrpsdlcd.block.entity.MyPSDTopLcd5BE;
 import com.mtrpsdlcd.registry.Items;
-import org.mtr.mapping.holder.BlockPos;
-import org.mtr.mapping.holder.BlockState;
-import org.mtr.mapping.holder.Item;
-import org.mtr.mapping.mapper.BlockEntityExtension;
-
 import javax.annotation.Nonnull;
+import mtr.mappings.BlockEntityMapper;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class MyPSDTopLcd5 extends MyPSDTop {
-	@Override
-	@Nonnull
-	public Item asItem2() {
-		return Items.PSD_DOOR_LCD5.get();
-	}
+   public MyPSDTopLcd5() {
+   }
 
-	@Override
-	@Nonnull
-	public BlockEntityExtension createBlockEntity(BlockPos blockPos, BlockState blockState) {
-		return new MyPSDTopLcd5BE(blockPos, blockState);
-	}
+   @Nonnull
+   public Item asItem() {
+      return (Item)Items.PSD_DOOR_LCD5.get();
+   }
+
+   @Nonnull
+   public BlockEntityMapper createBlockEntity(BlockPos blockPos, BlockState blockState) {
+      return new MyPSDTopLcd5BE(blockPos, blockState);
+   }
 }

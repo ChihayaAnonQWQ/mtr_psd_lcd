@@ -1,215 +1,219 @@
 package com.mtrpsdlcd.block;
 
+import com.mtrpsdlcd.Diag;
 import com.mtrpsdlcd.block.entity.MyPSDTopBE;
-import org.mtr.mapping.holder.ActionResult;
-import org.mtr.mapping.holder.Block;
-import org.mtr.mapping.holder.BlockHitResult;
-import org.mtr.mapping.holder.BlockPos;
-import org.mtr.mapping.holder.BlockState;
-import org.mtr.mapping.holder.Direction;
-import org.mtr.mapping.holder.Hand;
-import org.mtr.mapping.holder.Item;
-import org.mtr.mapping.holder.ItemPlacementContext;
-import org.mtr.mapping.holder.PlayerEntity;
-import org.mtr.mapping.holder.Property;
-import org.mtr.mapping.holder.World;
-import org.mtr.mapping.holder.WorldAccess;
-import org.mtr.mapping.mapper.BlockEntityExtension;
-import org.mtr.mapping.mapper.DirectionHelper;
-import org.mtr.mod.block.BlockPSDDoor;
-import org.mtr.mod.block.BlockPSDGlass;
-import org.mtr.mod.block.BlockPSDGlassEnd;
-import org.mtr.mod.block.BlockPSDTop;
-import org.mtr.mod.block.IBlock;
-
-import javax.annotation.Nonnull;
+import com.mtrpsdlcd.registry.Items;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import javax.annotation.Nonnull;
+import mtr.block.BlockPSDDoor;
+import mtr.block.BlockPSDGlass;
+import mtr.block.BlockPSDTop;
+import mtr.block.IBlock;
+import mtr.block.BlockPSDTop.EnumPersistent;
+import mtr.block.IBlock.EnumSide;
+import mtr.mappings.BlockEntityMapper;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 
 public class MyPSDTop extends BlockPSDTop {
+   public MyPSDTop() {
+   }
 
-	@Override
-	@Nonnull
-	public Item asItem2() {
-		return com.mtrpsdlcd.registry.Items.PSD_GLASS.get();
-	}
+   @Nonnull
+   public Item asItem() {
+      return (Item)Items.PSD_GLASS.get();
+   }
 
-	@Override
-	@Nonnull
-	public BlockEntityExtension createBlockEntity(BlockPos blockPos, BlockState blockState) {
-		return new MyPSDTopBE(blockPos, blockState);
-	}
+   @Nonnull
+   public BlockEntityMapper createBlockEntity(BlockPos blockPos, BlockState blockState) {
+      return new MyPSDTopBE(blockPos, blockState);
+   }
 
-	@Override
-	@Nonnull
-	public ActionResult onUse2(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult blockHitResult) {
-		return IBlock.checkHoldingItem(world, player, item -> {
-			if (item.data instanceof org.mtr.mod.item.ItemBrush) {
+   @Nonnull
+   public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult blockHitResult) {
+      return IBlock.checkHoldingItem(world, player, (item) -> {
+         if (item == mtr.Items.BRUSH.get()) {
+            if (!this.alignDirectionIfNeeded(world, pos, state)) {
+               return;
+            }
 
-				if (!alignDirectionIfNeeded(world, pos, state)) {
-					return;
-				}
+            BlockState cycled = (BlockState)state.cycle(BlockPSDTop.ARROW_DIRECTION);
+            world.setBlockAndUpdate(pos, cycled);
+            int doorArrow = IBlock.getStatePropertySafe(cycled, BlockPSDTop.ARROW_DIRECTION);
+            Direction facing = (Direction)IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
+            this.propagateTop(world, pos, facing.getClockWise(), (offsetPos) -> {
+               BlockState neighbor = world.getBlockState(offsetPos);
+               world.setBlockAndUpdate(offsetPos, this.applyDirectionToNeighbor(world, neighbor, offsetPos, doorArrow));
+            });
+            this.propagateTop(world, pos, facing.getCounterClockWise(), (offsetPos) -> {
+               BlockState neighbor = world.getBlockState(offsetPos);
+               world.setBlockAndUpdate(offsetPos, this.applyDirectionToNeighbor(world, neighbor, offsetPos, doorArrow));
+            });
+         } else {
+            boolean setPersistent = IBlock.getStatePropertySafe(state, BlockPSDTop.PERSISTENT) == EnumPersistent.NONE;
+            this.setState(world, pos, setPersistent);
+            this.propagateTop(world, pos, ((Direction)IBlock.getStatePropertySafe(state, BlockPSDTop.FACING)).getClockWise(), (offsetPos) -> this.setState(world, offsetPos, setPersistent));
+            this.propagateTop(world, pos, ((Direction)IBlock.getStatePropertySafe(state, BlockPSDTop.FACING)).getCounterClockWise(), (offsetPos) -> this.setState(world, offsetPos, setPersistent));
+         }
 
-				final BlockState cycled = state.cycle(new Property<>(BlockPSDTop.ARROW_DIRECTION.data));
-				world.setBlockState(pos, cycled);
-				final int doorArrow = IBlock.getStatePropertySafe(cycled, BlockPSDTop.ARROW_DIRECTION);
-				final Direction facing = IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
-				propagateTop(world, pos, facing.rotateYClockwise(), offsetPos -> {
-					final BlockState neighbor = world.getBlockState(offsetPos);
-					world.setBlockState(offsetPos, applyDirectionToNeighbor(world, neighbor, offsetPos, doorArrow));
-				});
-				propagateTop(world, pos, facing.rotateYCounterclockwise(), offsetPos -> {
-					final BlockState neighbor = world.getBlockState(offsetPos);
-					world.setBlockState(offsetPos, applyDirectionToNeighbor(world, neighbor, offsetPos, doorArrow));
-				});
-			} else {
+      }, (Runnable)null, new Item[]{(Item)mtr.Items.BRUSH.get(), net.minecraft.world.item.Items.SHEARS});
+   }
 
-				final boolean setPersistent = IBlock.getStatePropertySafe(state, BlockPSDTop.PERSISTENT) == BlockPSDTop.EnumPersistent.NONE;
-				setState(world, pos, setPersistent);
-				propagateTop(world, pos, IBlock.getStatePropertySafe(state, BlockPSDTop.FACING).rotateYClockwise(), offsetPos -> setState(world, offsetPos, setPersistent));
-				propagateTop(world, pos, IBlock.getStatePropertySafe(state, BlockPSDTop.FACING).rotateYCounterclockwise(), offsetPos -> setState(world, offsetPos, setPersistent));
-			}
-		}, null, org.mtr.mod.Items.BRUSH.get(), org.mtr.mapping.holder.Items.getShearsMapped());
-	}
+   private void setState(Level world, BlockPos pos, boolean persistent) {
+      Block blockBelow = world.getBlockState(pos.below()).getBlock();
+      BlockState current = world.getBlockState(pos);
+      BlockState toggled;
+      if (persistent) {
+         BlockPSDTop.EnumPersistent type;
+         if (blockBelow instanceof BlockPSDDoor) {
+            type = EnumPersistent.ARROW;
+         } else if (blockBelow instanceof BlockPSDGlass) {
+            type = EnumPersistent.ROUTE;
+         } else {
+            type = EnumPersistent.BLANK;
+         }
 
-	private void setState(World world, BlockPos pos, boolean persistent) {
-		final Block blockBelow = world.getBlockState(pos.down()).getBlock();
-		final BlockState current = world.getBlockState(pos);
-		final BlockState toggled;
-		if (persistent) {
-			final BlockPSDTop.EnumPersistent type;
-			if (blockBelow.data instanceof BlockPSDDoor) {
-				type = BlockPSDTop.EnumPersistent.ARROW;
-			} else if (blockBelow.data instanceof BlockPSDGlass) {
-				type = BlockPSDTop.EnumPersistent.ROUTE;
-			} else {
-				type = BlockPSDTop.EnumPersistent.BLANK;
-			}
-			toggled = current.with(new Property<>(BlockPSDTop.PERSISTENT.data), type);
-		} else {
-			toggled = current.with(new Property<>(BlockPSDTop.PERSISTENT.data), BlockPSDTop.EnumPersistent.NONE);
-		}
-		world.setBlockState(pos, toggled);
-	}
+         toggled = (BlockState)current.setValue(BlockPSDTop.PERSISTENT, type);
+      } else {
+         toggled = (BlockState)current.setValue(BlockPSDTop.PERSISTENT, EnumPersistent.NONE);
+      }
 
-	private void propagateTop(World world, BlockPos pos, Direction direction, Consumer<BlockPos> consumer) {
-		for (int i = 1; i <= 1; ++i) {
-			final BlockPos offsetPos = pos.offset(direction, i);
-			if (isTop(world.getBlockState(offsetPos).getBlock())) {
-				consumer.accept(offsetPos);
-				propagateTop(world, offsetPos, direction, consumer);
-				return;
-			}
-		}
-	}
+      world.setBlockAndUpdate(pos, toggled);
+   }
 
-	private boolean isTop(Block block) {
-		return block.data instanceof BlockPSDTop;
-	}
+   private void propagateTop(net.minecraft.world.level.Level world, net.minecraft.core.BlockPos pos, net.minecraft.core.Direction direction, Consumer<net.minecraft.core.BlockPos> consumer) {
+      for(int i = 1; i <= 1; ++i) {
+         BlockPos offsetPos = pos.relative(direction, i);
+         if (this.isTop(world.getBlockState(offsetPos).getBlock())) {
+            consumer.accept(offsetPos);
+            this.propagateTop(world, offsetPos, direction, consumer);
+            return;
+         }
+      }
 
-	private BlockState applyDirectionToNeighbor(World world, BlockState neighbor, BlockPos neighborPos, int doorArrow) {
-		final Block below = world.getBlockState(neighborPos.down()).getBlock();
-		if (below.data instanceof BlockPSDGlass) {
-			final int glassVal = (doorArrow == 2) ? 2 : 0;
-			return neighbor.with(new Property<>(BlockPSDTop.ARROW_DIRECTION.data), glassVal);
-		}
-		return neighbor.with(new Property<>(BlockPSDTop.ARROW_DIRECTION.data), doorArrow);
-	}
+   }
 
-	private boolean alignDirectionIfNeeded(World world, BlockPos pos, BlockState state) {
-		final int myDir = IBlock.getStatePropertySafe(state, BlockPSDTop.ARROW_DIRECTION);
-		if (myDir <= 0) {
-			return true;
-		}
-		final Direction facing = IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
-		final Map<Integer, Integer> counts = new HashMap<>();
-		counts.put(myDir, 0);
-		collectDirectionSide(world, pos, facing.rotateYClockwise(), counts);
-		collectDirectionSide(world, pos, facing.rotateYCounterclockwise(), counts);
-		final int majority = pickMajority(counts);
-		if (majority > 0 && majority != myDir) {
-			world.setBlockState(pos, state.with(new Property<>(BlockPSDTop.ARROW_DIRECTION.data), majority));
-			return false;
-		}
-		return true;
-	}
+   private boolean isTop(Block block) {
+      return block instanceof BlockPSDTop;
+   }
 
-	private void collectDirectionSide(World world, BlockPos pos, Direction dir, Map<Integer, Integer> counts) {
-		BlockPos next = pos.offset(dir);
-		while (true) {
-			final BlockState s = world.getBlockState(next);
-			if (!(s.getBlock().data instanceof BlockPSDTop)) {
-				return;
-			}
-			final Block below = world.getBlockState(next.down()).getBlock();
-			if (below.data instanceof BlockPSDGlass) {
-				return;
-			}
-			final int d = IBlock.getStatePropertySafe(s, BlockPSDTop.ARROW_DIRECTION);
-			if (d > 0) {
-				counts.merge(d, 1, Integer::sum);
-			}
-			next = next.offset(dir);
-		}
-	}
+   private BlockState applyDirectionToNeighbor(Level world, BlockState neighbor, BlockPos neighborPos, int doorArrow) {
+      Block below = world.getBlockState(neighborPos.below()).getBlock();
+      if (below instanceof BlockPSDGlass) {
+         int glassVal = doorArrow == 2 ? 2 : 0;
+         return (BlockState)neighbor.setValue(BlockPSDTop.ARROW_DIRECTION, glassVal);
+      } else {
+         return (BlockState)neighbor.setValue(BlockPSDTop.ARROW_DIRECTION, doorArrow);
+      }
+   }
 
-	private int pickMajority(Map<Integer, Integer> counts) {
-		int bestDir = 0, bestCount = 0;
-		for (Map.Entry<Integer, Integer> e : counts.entrySet()) {
-			final int c = e.getValue();
-			if (c > bestCount) {
-				bestCount = c;
-				bestDir = e.getKey();
-			}
-		}
-		return bestDir;
-	}
+   private boolean alignDirectionIfNeeded(Level world, BlockPos pos, BlockState state) {
+      int myDir = IBlock.getStatePropertySafe(state, BlockPSDTop.ARROW_DIRECTION);
+      if (myDir <= 0) {
+         return true;
+      } else {
+         Direction facing = (Direction)IBlock.getStatePropertySafe(state, BlockPSDTop.FACING);
+         Map<Integer, Integer> counts = new HashMap();
+         counts.put(myDir, 0);
+         this.collectDirectionSide(world, pos, facing.getClockWise(), counts);
+         this.collectDirectionSide(world, pos, facing.getCounterClockWise(), counts);
+         int majority = this.pickMajority(counts);
+         if (majority > 0 && majority != myDir) {
+            world.setBlockAndUpdate(pos, (BlockState)state.setValue(BlockPSDTop.ARROW_DIRECTION, majority));
+            return false;
+         } else {
+            return true;
+         }
+      }
+   }
 
-	private boolean isStandalone() {
-		return this instanceof IStandaloneTopModule;
-	}
+   private void collectDirectionSide(net.minecraft.world.level.Level world, net.minecraft.core.BlockPos pos, net.minecraft.core.Direction dir, Map<Integer, Integer> counts) {
+      BlockPos next = pos.relative(dir);
 
-	@Override
-	@Nonnull
-	public BlockState getStateForNeighborUpdate2(BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos) {
-		if (isStandalone()) {
+      while(true) {
+         BlockState s = world.getBlockState(next);
+         if (!(s.getBlock() instanceof BlockPSDTop)) {
+            return;
+         }
 
-			return BlockPSDTop.getActualState(world, pos);
-		}
-		return super.getStateForNeighborUpdate2(state, direction, neighborState, world, pos, neighborPos);
-	}
+         Block below = world.getBlockState(next.below()).getBlock();
+         if (below instanceof BlockPSDGlass) {
+            return;
+         }
 
-	@Override
-	@Nonnull
-	public BlockState getPlacementState2(ItemPlacementContext ctx) {
-		if (isStandalone()) {
+         int d = IBlock.getStatePropertySafe(s, BlockPSDTop.ARROW_DIRECTION);
+         if (d > 0) {
+            counts.merge(d, 1, Integer::sum);
+         }
 
-			return getDefaultState2().with(new Property<>(DirectionHelper.FACING.data), ctx.getPlayerFacing().data);
-		}
-		return super.getPlacementState2(ctx);
-	}
+         next = next.relative(dir);
+      }
+   }
 
-	private boolean isDoubleModule() {
-		return this instanceof MyPSDTopLcd8 || this instanceof MyPSDTopLcd9 || this instanceof MyPSDTopLcd10 || this instanceof MyPSDTopLcd11;
-	}
+   private int pickMajority(Map<Integer, Integer> counts) {
+      int bestDir = 0;
+      int bestCount = 0;
 
-	private static boolean isDoubleModule(Block block) {
-		return block.data instanceof MyPSDTopLcd8 || block.data instanceof MyPSDTopLcd9 || block.data instanceof MyPSDTopLcd10 || block.data instanceof MyPSDTopLcd11;
-	}
+      for(Map.Entry<Integer, Integer> e : counts.entrySet()) {
+         int c = e.getValue();
+         if (c > bestCount) {
+            bestCount = c;
+            bestDir = e.getKey();
+         }
+      }
 
-	@Override
-	public void onBreak2(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-		if (isDoubleModule()) {
-			final Direction facing = IBlock.getStatePropertySafe(state, DirectionHelper.FACING);
-			final IBlock.EnumSide side = IBlock.getStatePropertySafe(state, IBlock.SIDE_EXTENDED);
-			if (side == IBlock.EnumSide.LEFT || side == IBlock.EnumSide.RIGHT) {
-				final BlockPos partnerPos = side == IBlock.EnumSide.LEFT ? pos.offset(facing.rotateYClockwise()) : pos.offset(facing.rotateYCounterclockwise());
-				if (isDoubleModule(world.getBlockState(partnerPos).getBlock())) {
-					world.setBlockState(partnerPos, org.mtr.mapping.holder.Blocks.getAirMapped().getDefaultState(), 35);
-				}
-			}
-		}
-		super.onBreak2(world, pos, state, player);
-	}
+      return bestDir;
+   }
+
+   private boolean isStandalone() {
+      return this instanceof IStandaloneTopModule;
+   }
+
+   @Nonnull
+   public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor world, BlockPos pos, BlockPos neighborPos) {
+      return this.isStandalone() ? BlockPSDTop.getActualState(world, pos) : super.updateShape(state, direction, neighborState, world, pos, neighborPos);
+   }
+
+   @Nonnull
+   public BlockState getStateForPlacement(BlockPlaceContext ctx) {
+      return this.isStandalone() ? (BlockState)this.defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, ctx.getHorizontalDirection()) : super.getStateForPlacement(ctx);
+   }
+
+   private boolean isDoubleModule() {
+      return this instanceof MyPSDTopLcd8 || this instanceof MyPSDTopLcd9 || this instanceof MyPSDTopLcd10 || this instanceof MyPSDTopLcd11;
+   }
+
+   private static boolean isDoubleModule(Block block) {
+      return block instanceof MyPSDTopLcd8 || block instanceof MyPSDTopLcd9 || block instanceof MyPSDTopLcd10 || block instanceof MyPSDTopLcd11;
+   }
+
+   public void playerWillDestroy(Level world, BlockPos pos, BlockState state, Player player) {
+      Diag.breakLog(state, pos, player);
+      if (this.isDoubleModule()) {
+         Direction facing = (Direction)IBlock.getStatePropertySafe(state, HorizontalDirectionalBlock.FACING);
+         IBlock.EnumSide side = (IBlock.EnumSide)IBlock.getStatePropertySafe(state, IBlock.SIDE_EXTENDED);
+         if (side == EnumSide.LEFT || side == EnumSide.RIGHT) {
+            BlockPos partnerPos = side == EnumSide.LEFT ? pos.relative(facing.getClockWise()) : pos.relative(facing.getCounterClockWise());
+            if (isDoubleModule(world.getBlockState(partnerPos).getBlock())) {
+               world.setBlock(partnerPos, Blocks.AIR.defaultBlockState(), 35);
+            }
+         }
+      }
+
+      super.playerWillDestroy(world, pos, state, player);
+   }
 }
