@@ -9,8 +9,8 @@ modId = "mtr_psd_lcd"
 version = "${version}"
 displayName = "Mtr_psd_LCD"
 logoFile = "assets/mtr_psd_lcd/icon.png"
-authors = "Zzztick365 (original mod); ChihayaAnonQWQ (Forge 1.20.1 port)"
-credits = "Original mod by Zzztick365 (MIT), upstream contributor: hermes. Upstream main targets Fabric 1.20.1 + MTR 4.0.5; this port follows the 1.19.2 + MTR 3 release line and targets Forge 1.20.1 + MTR 3. Port by ChihayaAnonQWQ, porting and development carried out with DeepSeek (AI assistant)."
+authors = "Zzztick365 (original mod); DeepSeek (Forge 1.20.1 + MTR 3 port); ChihayaAnonQWQ (testing & release)"
+credits = "Original mod by Zzztick365 (MIT), upstream contributor: hermes. Upstream main targets Fabric 1.20.1 + MTR 4.0.5; this port follows the 1.19.2 + MTR 3 release line and targets Forge 1.20.1 + MTR 3. Ported by DeepSeek, tested in-game by ChihayaAnonQWQ with no issues found. Unofficial port: if you run into problems, do NOT report them to the original repository or author - use this fork's issue tracker."
 description = "MTR addon: platform screen doors with LCD route displays. Unofficial Forge 1.20.1 + MTR 3 port of Zzztick365's Mtr_psd_lcd (MIT)."
 
 [[dependencies.mtr_psd_lcd]]

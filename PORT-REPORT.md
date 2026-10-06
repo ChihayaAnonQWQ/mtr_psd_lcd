@@ -6,7 +6,9 @@
 - **产物**：`build/libs/mtr_psd_lcd-forge-mc1.20.1-mtr3-1.2.8.jar`
   （SHA-256 `49ABA99EE09881DC58D4D0822FFA7E29AD736512744BD3EC8E3AA3CC5FFB6B77`，含 §4.4 的屏蔽门模型修复）
 - **实机验证环境**：Forge 1.20.1-47.4.15 + MTR-forge **3.6.3**（Yomi fork）+ Architectury 9.2.14
-- **移植者**：DeepSeek（DeepSeek Harness agent），2026-10-06
+- **移植**：**DeepSeek**（DeepSeek Harness agent），2026-10-06
+- **实机测试 / 发布维护**：**ChihayaAnonQWQ**（整合包内实机测试，测试期间未发现问题）
+- **反馈渠道**：本移植为**非官方**版本；如出现问题**请勿提交给原仓库 / 原作者**，请使用本 fork 的 Issues
 
 ---
 
@@ -351,7 +353,9 @@ if (currentBlockBelow instanceof BlockPSDAPGDoorBase || standaloneModule || vani
 1. **不能与官方 MTR 4 版本共存**：`mod id` 相同（`mtr_psd_lcd`），`PSDForge` 启动时会扫描 `mods/` 并在发现多个同 id 版本时直接报错（与上游行为一致）。
 2. **必须安装 Architectury API**（MTR 3 Forge 构建的强制依赖）。
 3. MTR 4 的用户应使用官方 `forge1.20.1+1.2.7`，本移植面向 MTR 3 服务器/整合包。
-4. 版权与署名：模组本体按上游 **MIT** 授权，`mods.toml` 的 `authors` 保留原作者 **Zzztick365**；本移植为**非官方移植版**，问题请反馈到本移植仓库而非原项目。
+4. 版权与署名：模组本体按上游 **MIT** 授权，`mods.toml` 的 `authors` 保留原作者 **Zzztick365**；
+   移植由 **DeepSeek** 完成、**ChihayaAnonQWQ** 实机测试并维护仓库；本移植为**非官方移植版**，
+   **如出现问题请勿提交给原仓库 / 原作者**，请反馈到本移植仓库。
 
 ## 6. 复现用工具
 
