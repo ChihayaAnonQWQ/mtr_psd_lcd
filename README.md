@@ -239,5 +239,5 @@ psd_top_box_full_2
 
 ## 许可
 
-**MIT** —— 原始版权行 `Copyright (c) 2026 psd_only contributors` 完整保留在 [LICENSE](LICENSE) 中，
-其下附有本移植的声明段。重新分发时请一并保留署名信息。
+**MIT** —— [LICENSE](LICENSE) 为上游原始 MIT 文本（`Copyright (c) 2026 psd_only contributors`），**未做改动**；
+本移植的声明、基线说明与反馈渠道见 [NOTICE.md](NOTICE.md)。重新分发时请一并保留署名信息。
