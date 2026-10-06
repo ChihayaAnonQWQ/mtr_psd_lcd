@@ -12,6 +12,22 @@
 
 ---
 
+## 📦 官方版本已发布（优先推荐）
+
+原作者已在 Modrinth 发布官方构建：
+
+> **`[MTR3] MTR-PSD-LCD 1.2.9`** —— **Forge 1.20.1 + MTR 3**（2026-10-06 发布）
+
+该版本**已收录本移植的全部资源层修复**（干净贴图 `psd_top_clean` / `psd_top_edge_clean`、正面/背面 UV 方案、
+门 blockstate 修复、`psd_top_lcd12` 还原等；经逐文件比对，模型与贴图与本移植**逐字节一致**），
+Java 代码则由原作者沿用其自身实现。
+
+👉 **推荐直接使用官方发布**：**[Modrinth 版本页 — mtr-psd-lcd/versions](https://modrinth.com/mod/mtr-psd-lcd/versions)**
+
+本 fork 作为 **MTR 3 移植的开发与存档仓库**继续保留（含完整移植报告与实机验证记录）。
+
+---
+
 ## 目录
 
 - [这是什么](#这是什么)
@@ -213,7 +229,12 @@ psd_top_box_full_2
 
 ## 下载
 
-预编译 jar 见本仓库 **[Releases](https://github.com/ChihayaAnonQWQ/mtr_psd_lcd/releases)**（或按上面的步骤自行构建）。
+| 来源 | 说明 |
+| --- | --- |
+| **[Modrinth（官方，推荐）](https://modrinth.com/mod/mtr-psd-lcd/versions)** | 原作者发布，`[MTR3] 1.2.9` = **Forge 1.20.1 + MTR 3**，已收录本移植的资源层修复 |
+| [本仓库 Releases](https://github.com/ChihayaAnonQWQ/mtr_psd_lcd/releases) | 本移植的构建（MTR 3 维护分支，资源层与官方 1.2.9 一致） |
+
+也可以按上面的步骤自行构建。
 
 ---
 
