@@ -1,8 +1,20 @@
 # Mtr_psd_LCD — Forge 1.20.1 / MTR 3 移植版
 
-> **非官方移植**：本仓库是 **[Zzztick365/mtr_psd_lcd](https://github.com/Zzztick365/mtr_psd_lcd)**（Fabric 1.19.2 + MTR 3）的
-> Forge 1.20.1 移植分支。原作版权归原作者 **Zzztick365** 所有，遵循 **MIT** 许可（原始版权行保留在 [LICENSE](LICENSE) 中）。
+> **非官方移植**：本仓库是 **[Zzztick365/mtr_psd_lcd](https://github.com/Zzztick365/mtr_psd_lcd)** 的 fork。
+> 原作版权归原作者 **Zzztick365** 所有，遵循 **MIT** 许可（原始版权行保留在 [LICENSE](LICENSE) 中）。
 > 署名与分工见 [CREDITS.md](CREDITS.md)，移植技术细节与所有改动见 [PORT-REPORT.md](PORT-REPORT.md)。
+
+## 与上游分支的关系
+
+| | 上游 `main` | 本分支 `forge-1.20.1-mtr3` |
+| --- | --- | --- |
+| 加载器 | **Fabric**（fabric-loom 1.5.8） | **Forge 47.x** |
+| Minecraft | 1.20.1 | 1.20.1 |
+| MTR | **4.0.5** | **3.x**（`[1.20.1-3.2.2-hotfix-2, 1.20.1-4.0.0)`） |
+| 代码基线 | 上游 `main`（mod_version 1.2.0） | 上游 **1.19.2 + MTR 3 的 v1.2.8** 发布版源码 |
+
+也就是说：上游 `main` 面向 **Fabric + MTR 4**；本分支把**同一模组的 1.19.2 + MTR 3 版本**移植到 **Forge 1.20.1 + MTR 3**，
+服务于仍在用 MTR 3 的服务器与整合包。
 
 为 MTR（Minecraft Transit Railway）的**站台屏蔽门 / 半高安全门**提供 **LCD 信息显示**的附属模组：
 顶板、屏蔽门与玻璃上可以显示本站名、下一站、线路图、班次与提示语等动态内容。
